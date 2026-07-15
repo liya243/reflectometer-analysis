@@ -1,0 +1,43 @@
+# Raw measurement data can be hundreds of MB and should be stored outside git.
+*.dat
+*.bin
+
+# Generated analysis products.
+analysis_outputs/
+*.png
+*.svg
+*.pdf
+*.html
+*.pkl
+*.pickle
+*.mat
+*.csv
+
+# Python runtime/cache files.
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.mplconfig/
+
+# Virtual environments and local editor files.
+.venv/
+venv/
+env/
+.idea/
+.vscode/
+*.swp
+*.swo
+*.swn
+.*.swp
+.*.swo
+.*.swn
+*~
+
+# Local Codex/agent state is machine-specific.
+.codex
+.codex/
+.agents
+.agents/
