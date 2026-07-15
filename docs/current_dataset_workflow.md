@@ -1,24 +1,24 @@
-# Current Dataset Workflow
+# Workflow для текущего датасета
 
-This file documents the parameter choices used for the current local dataset
-`mem1_07_10-11_10_22.dat`.  The data file itself is not committed to git.
+Этот файл фиксирует параметры, которые использовались для текущего локального датасета
+`mem1_07_10-11_10_22.dat`. Сам файл данных не коммитится в git.
 
-## Geometry and Timing Assumptions
+## Геометрия и временные параметры
 
-- Scan rate: `10000 Hz`.
-- Service zone: approximately `0-110 m`.
-- Useful fiber zone used in most analyses: `110-360 m`.
-- Dark photodiode baseline: final `50 m` of every trace.
-- Pulse support used for deconvolution: `75-85 m`.
-- Pulse zero-level coordinate: `70 m`.
-- Alternating pulse lengths: even and odd reflectograms must be processed separately.
-- Saw sweep span: `3.125 pm`.
-- Accepted sweep period: `76.8 ms`.
-- Accepted sweep-boundary anchor: `0.0919 s`.
-- Last modulation boundary upper limit: `4.45 s`.
-- Last full sweep used for deconvolution: `4.3159-4.3927 s`.
+- Частота записи рефлектограмм: `10000 Hz`.
+- Сервисная зона: примерно `0-110 m`.
+- Полезный участок волокна в большинстве расчётов: `110-360 m`.
+- Тёмный уровень фотодиода: последние `50 m` каждой трассы.
+- Поддержка импульса для деконволюции: `75-85 m`.
+- Координата нулевого уровня для формы импульса: `70 m`.
+- Длины импульса чередуются, поэтому чётные и нечётные рефлектограммы обрабатываются отдельно.
+- Размах пилообразного свипа: `3.125 pm`.
+- Принятый период свипа: `76.8 ms`.
+- Принятая опорная граница свипа: `0.0919 s`.
+- Верхняя граница времени, где ещё учитываются сбросы модуляции: `4.45 s`.
+- Последний полный свип, использованный для деконволюции: `4.3159-4.3927 s`.
 
-## Regenerate Colormaps
+## Пересоздание цветных карт
 
 ```bash
 python fiber_colormap_with_resets_even_odd.py mem1_07_10-11_10_22.dat \
@@ -33,7 +33,7 @@ python fiber_colormap_with_resets_even_odd.py mem1_07_10-11_10_22.dat \
   --regularize-reset-grid
 ```
 
-## Regenerate Pulse Shapes
+## Пересоздание форм импульсов
 
 ```bash
 python pulse_profile_even_odd.py mem1_07_10-11_10_22.dat \
@@ -43,7 +43,7 @@ python pulse_profile_even_odd.py mem1_07_10-11_10_22.dat \
   --baseline-tail-m 50
 ```
 
-## Recover Discrete Complex Field from the Last Sweep
+## Восстановление комплексного поля дискретов по последнему свипу
 
 ```bash
 python solve_complex_amplitudes_from_harmonics.py mem1_07_10-11_10_22.dat \
@@ -61,11 +61,11 @@ python solve_complex_amplitudes_from_harmonics.py mem1_07_10-11_10_22.dat \
   --direct-iters 20 --direct-damping 0.25 --direct-ridge-lambda 1e-3
 ```
 
-## Match a Post-Modulation Reference to the Last Sweep
+## Сопоставление референса после модуляции с последним свипом
 
-The direct correlation check around `6 s` suggests the laser stopped near the middle of the last
-calibrated sweep, roughly `1.6 pm` inside the `0..3.125 pm` sweep interval.  The correlation is weak,
-so this is a sanity check rather than a precision wavelength measurement.
+Прямая корреляционная проверка около `6 s` показывает, что лазер остановился примерно около середины
+последнего калиброванного свипа: около `1.6 pm` внутри интервала `0..3.125 pm`. Корреляция слабая,
+поэтому это sanity-check, а не точное измерение длины волны.
 
 ```bash
 python match_reference_time_to_last_sweep.py mem1_07_10-11_10_22.dat \
@@ -80,10 +80,10 @@ python match_reference_time_to_last_sweep.py mem1_07_10-11_10_22.dat \
   --exclude-z-min 230 --exclude-z-max 240
 ```
 
-## Track the Two-Discrete Piezo Phase
+## Отслеживание фазы пьезоэлемента на двух дискретах
 
-This analysis uses the complex field recovered from the last sweep and the currently selected
-wavelength-drift correction.  The best candidate found in the current dataset is the adjacent pair:
+Этот анализ использует комплексное поле, восстановленное по последнему свипу, и выбранную на данный
+момент коррекцию дрейфа длины волны. Для текущего датасета лучший найденный кандидат — соседняя пара:
 
 - `230.446111 m`
 - `230.965134 m`

@@ -136,33 +136,33 @@ def save_matlab_bundle(output_dir, stem, suffix, payload):
         f"""this_dir = fileparts(mfilename('fullpath'));
 data = load(fullfile(this_dir, '{mat_path.name}'));
 
-figure('Color', 'w', 'Name', 'Reference-to-last-sweep correlation');
+figure('Color', 'w', 'Name', 'Корреляция референса с последним свипом');
 subplot(2, 1, 1);
 plot(data.even_lambda_pm, data.even_corr, 'LineWidth', 1.2);
 hold on; xline(data.even_best_lambda_pm, 'r--', 'LineWidth', 1.2);
-grid on; xlabel('\\Delta\\lambda inside last sweep (pm)'); ylabel('Correlation');
-title(sprintf('Even, best %.4f pm, corr %.4f', data.even_best_lambda_pm, data.even_best_corr));
+grid on; xlabel('\\Delta\\lambda внутри последнего свипа (pm)'); ylabel('Корреляция');
+title(sprintf('Чётные, максимум %.4f pm, corr %.4f', data.even_best_lambda_pm, data.even_best_corr));
 
 subplot(2, 1, 2);
 plot(data.odd_lambda_pm, data.odd_corr, 'LineWidth', 1.2);
 hold on; xline(data.odd_best_lambda_pm, 'r--', 'LineWidth', 1.2);
-grid on; xlabel('\\Delta\\lambda inside last sweep (pm)'); ylabel('Correlation');
-title(sprintf('Odd, best %.4f pm, corr %.4f', data.odd_best_lambda_pm, data.odd_best_corr));
+grid on; xlabel('\\Delta\\lambda внутри последнего свипа (pm)'); ylabel('Корреляция');
+title(sprintf('Нечётные, максимум %.4f pm, corr %.4f', data.odd_best_lambda_pm, data.odd_best_corr));
 
-figure('Color', 'w', 'Name', 'Matched traces');
+figure('Color', 'w', 'Name', 'Сопоставленные трассы');
 subplot(2, 1, 1);
 plot(data.coord_m, data.even_target_trace, 'k', 'LineWidth', 1.0);
 hold on; plot(data.coord_m, data.even_best_sweep_trace, 'r', 'LineWidth', 1.0);
-grid on; xlabel('Coordinate (m)'); ylabel('Signal');
-title('Even: reference at requested time vs best last-sweep trace');
-legend('Reference', 'Best last sweep', 'Location', 'best');
+grid on; xlabel('Координата (m)'); ylabel('Сигнал');
+title('Чётные: референс в заданное время и лучшая трасса последнего свипа');
+legend('Референс', 'Лучший совпавший свип', 'Location', 'best');
 
 subplot(2, 1, 2);
 plot(data.coord_m, data.odd_target_trace, 'k', 'LineWidth', 1.0);
 hold on; plot(data.coord_m, data.odd_best_sweep_trace, 'r', 'LineWidth', 1.0);
-grid on; xlabel('Coordinate (m)'); ylabel('Signal');
-title('Odd: reference at requested time vs best last-sweep trace');
-legend('Reference', 'Best last sweep', 'Location', 'best');
+grid on; xlabel('Координата (m)'); ylabel('Сигнал');
+title('Нечётные: референс в заданное время и лучшая трасса последнего свипа');
+legend('Референс', 'Лучший совпавший свип', 'Location', 'best');
 """,
         encoding="utf-8",
     )
@@ -171,25 +171,25 @@ legend('Reference', 'Best last sweep', 'Location', 'best');
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Match a post-modulation reference trace to the last wavelength sweep by direct correlation."
+        description="Сопоставить референс после выключения модуляции с последним свипом длины волны по прямой корреляции."
     )
-    parser.add_argument("dat_path", help="Path to .dat file")
-    parser.add_argument("--output-dir", default="analysis_outputs", help="Directory for outputs")
-    parser.add_argument("--scan-rate", type=float, default=None, help="Optional scan rate override")
-    parser.add_argument("--fiber-z-min", type=float, default=110.0, help="Start of real fiber region in meters")
-    parser.add_argument("--fiber-z-max", type=float, default=360.0, help="End of real fiber region in meters")
-    parser.add_argument("--baseline-tail-m", type=float, default=50.0, help="Subtract per-trace baseline from last this many meters")
-    parser.add_argument("--reset-period-ms", type=float, default=76.8, help="Accepted sweep period in ms")
-    parser.add_argument("--reset-anchor-time-s", type=float, default=0.0919, help="One accepted reset/sweep-boundary time in seconds")
-    parser.add_argument("--max-reset-time-s", type=float, default=4.45, help="Last accepted reset-grid upper bound")
-    parser.add_argument("--sweep-index", type=int, default=-1, help="Sweep interval index; -1 means last complete sweep")
-    parser.add_argument("--sweep-span-pm", type=float, default=3.125, help="Wavelength span of one sweep")
-    parser.add_argument("--reference-time-s", type=float, default=6.0, help="Requested reference time after modulation")
-    parser.add_argument("--reference-half-window-traces", type=int, default=0, help="Average this many same-parity traces before/after the reference")
-    parser.add_argument("--sweep-half-window-traces", type=int, default=0, help="Average this many same-parity last-sweep traces before/after each tested point")
-    parser.add_argument("--exclude-z-min", type=float, default=None, help="Optional disturbed-zone start to exclude")
-    parser.add_argument("--exclude-z-max", type=float, default=None, help="Optional disturbed-zone end to exclude")
-    parser.add_argument("--suffix", default=None, help="Optional output suffix")
+    parser.add_argument("dat_path", help="Путь к .dat-файлу")
+    parser.add_argument("--output-dir", default="analysis_outputs", help="Каталог для выходных файлов")
+    parser.add_argument("--scan-rate", type=float, default=None, help="Необязательная частота записи рефлектограмм")
+    parser.add_argument("--fiber-z-min", type=float, default=110.0, help="Начало полезного участка волокна в метрах")
+    parser.add_argument("--fiber-z-max", type=float, default=360.0, help="Конец полезного участка волокна в метрах")
+    parser.add_argument("--baseline-tail-m", type=float, default=50.0, help="Вычесть базовый уровень по последним N метрам")
+    parser.add_argument("--reset-period-ms", type=float, default=76.8, help="Принятый период свипа в ms")
+    parser.add_argument("--reset-anchor-time-s", type=float, default=0.0919, help="Одно принятое время сброса/границы свипа")
+    parser.add_argument("--max-reset-time-s", type=float, default=4.45, help="Последняя допустимая граница сетки сбросов")
+    parser.add_argument("--sweep-index", type=int, default=-1, help="Индекс интервала свипа; -1 означает последний полный свип")
+    parser.add_argument("--sweep-span-pm", type=float, default=3.125, help="Размах одного свипа длины волны")
+    parser.add_argument("--reference-time-s", type=float, default=6.0, help="Запрошенное время референса после модуляции")
+    parser.add_argument("--reference-half-window-traces", type=int, default=0, help="Усреднить столько same-parity трасс до/после референса")
+    parser.add_argument("--sweep-half-window-traces", type=int, default=0, help="Усреднить столько same-parity трасс свипа до/после каждой проверяемой точки")
+    parser.add_argument("--exclude-z-min", type=float, default=None, help="Начало возмущённой зоны, которую нужно исключить")
+    parser.add_argument("--exclude-z-max", type=float, default=None, help="Конец возмущённой зоны, которую нужно исключить")
+    parser.add_argument("--suffix", default=None, help="Необязательный суффикс выходных файлов")
     args = parser.parse_args()
 
     dat_path = Path(args.dat_path)
@@ -214,7 +214,7 @@ def main():
         coord_mask = base_coord_mask
         mask_tag = "full_fiber"
     if np.count_nonzero(coord_mask) < 4:
-        raise ValueError("Correlation coordinate mask is too small")
+        raise ValueError("Слишком мало координат для расчёта корреляции")
 
     reset_times_s = build_periodic_reset_grid(
         anchor_time_s=args.reset_anchor_time_s,
@@ -227,7 +227,7 @@ def main():
     if selected_sweep_index < 0:
         selected_sweep_index = sweep_count + selected_sweep_index
     if not (0 <= selected_sweep_index < sweep_count):
-        raise ValueError(f"sweep_index is out of range for {sweep_count} intervals")
+        raise ValueError(f"sweep_index вне диапазона для {sweep_count} интервалов")
     sweep_start_s = float(reset_times_s[selected_sweep_index])
     sweep_end_s = float(reset_times_s[selected_sweep_index + 1])
 
@@ -253,25 +253,25 @@ def main():
     for row, parity in enumerate(["even", "odd"]):
         res = parity_results[parity]
         axes[row, 0].plot(res["lambda_pm"], res["corr"], linewidth=1.25)
-        axes[row, 0].axvline(res["best_lambda_pm"], color="#D62728", linestyle="--", linewidth=1.1, label="Best trace")
-        axes[row, 0].axvline(res["refined_lambda_pm"], color="#111111", linestyle=":", linewidth=1.1, label="Parabolic peak")
+        axes[row, 0].axvline(res["best_lambda_pm"], color="#D62728", linestyle="--", linewidth=1.1, label="Лучшая трасса")
+        axes[row, 0].axvline(res["refined_lambda_pm"], color="#111111", linestyle=":", linewidth=1.1, label="Параболический максимум")
         axes[row, 0].set_title(
-            f"{parity}: best {res['best_lambda_pm']:.4f} pm, corr {res['best_corr']:.4f}"
+            f"{parity}: максимум {res['best_lambda_pm']:.4f} pm, corr {res['best_corr']:.4f}"
         )
-        axes[row, 0].set_xlabel("Delta lambda inside last sweep (pm)")
-        axes[row, 0].set_ylabel("Correlation")
+        axes[row, 0].set_xlabel("Delta lambda внутри последнего свипа (pm)")
+        axes[row, 0].set_ylabel("Корреляция")
         axes[row, 0].grid(alpha=0.25)
         axes[row, 0].legend(loc="best")
 
-        axes[row, 1].plot(distance_axis_m[coord_mask], res["target_trace"], color="#111111", linewidth=0.9, label="6 s reference")
-        axes[row, 1].plot(distance_axis_m[coord_mask], res["best_sweep_trace"], color="#D62728", linewidth=0.9, label="Best last sweep")
-        axes[row, 1].set_title(f"{parity}: trace overlay")
-        axes[row, 1].set_xlabel("Coordinate (m)")
-        axes[row, 1].set_ylabel("Signal, baseline subtracted")
+        axes[row, 1].plot(distance_axis_m[coord_mask], res["target_trace"], color="#111111", linewidth=0.9, label="Референс 6 s")
+        axes[row, 1].plot(distance_axis_m[coord_mask], res["best_sweep_trace"], color="#D62728", linewidth=0.9, label="Лучший последний свип")
+        axes[row, 1].set_title(f"{parity}: наложение трасс")
+        axes[row, 1].set_xlabel("Координата (m)")
+        axes[row, 1].set_ylabel("Сигнал после вычитания baseline")
         axes[row, 1].grid(alpha=0.25)
         axes[row, 1].legend(loc="best")
     fig.suptitle(
-        f"Reference at {args.reference_time_s:.4f} s matched to last sweep {sweep_start_s:.4f}-{sweep_end_s:.4f} s"
+        f"Референс в {args.reference_time_s:.4f} s сопоставлен с последним свипом {sweep_start_s:.4f}-{sweep_end_s:.4f} s"
     )
     png_path = output_dir / f"{dat_path.stem}_{suffix}.png"
     fig.savefig(png_path, dpi=200)

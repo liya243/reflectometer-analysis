@@ -91,15 +91,15 @@ def save_matlab_bundle(
     script_text = f"""this_dir = fileparts(mfilename('fullpath'));
 data = load(fullfile(this_dir, '{data_mat_path.name}'));
 
-f1 = figure('Color', 'w', 'Name', 'Signal at coordinate');
+f1 = figure('Color', 'w', 'Name', 'Сигнал в выбранной координате');
 plot(data.time_s, data.signal, 'Color', [0.72 0.80 0.92], 'LineWidth', 0.5);
 hold on;
 plot(data.time_s, data.signal_rolling, 'k', 'LineWidth', 1.6);
 grid on;
-xlabel('Time (s)');
-ylabel('Signal');
-title(sprintf('Signal vs time at %.3f m (sample %d)', data.coordinate_m, data.coordinate_index));
-legend('Signal', sprintf('Rolling mean (%d)', data.rolling_window), 'Location', 'best');
+xlabel('Время (s)');
+ylabel('Сигнал');
+title(sprintf('Сигнал во времени в %.3f m (sample %d)', data.coordinate_m, data.coordinate_index));
+legend('Сигнал', sprintf('Скользящее среднее (%d)', data.rolling_window), 'Location', 'best');
 
 % Optional: save native MATLAB figure file after opening it.
 % savefig(f1, fullfile(this_dir, '{stem}_{suffix_tag}.fig'));
@@ -114,37 +114,37 @@ legend('Signal', sprintf('Rolling mean (%d)', data.rolling_window), 'Location', 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Plot signal vs time at one reflectogram coordinate."
+        description="Построить сигнал во времени в одной координате рефлектограммы."
     )
-    parser.add_argument("dat_path", help="Path to the .dat file")
+    parser.add_argument("dat_path", help="Путь к .dat-файлу")
     parser.add_argument(
         "--output-dir",
         default="analysis_outputs",
-        help="Directory for output files",
+        help="Каталог для выходных файлов",
     )
     parser.add_argument(
         "--scan-rate",
         type=float,
         default=None,
-        help="Optional override for reflectogram scan rate in Hz",
+        help="Необязательная частота записи рефлектограмм в Hz",
     )
     parser.add_argument(
         "--ignore-first-meters",
         type=float,
         default=0.0,
-        help="Ignore this many meters from the beginning when auto-selecting the coordinate",
+        help="Игнорировать столько метров от начала при автоматическом выборе координаты",
     )
     parser.add_argument(
         "--coordinate-m",
         type=float,
         default=None,
-        help="Coordinate in meters; if omitted, choose the strongest-varying coordinate after ignore-first-meters",
+        help="Координата в метрах; если не задана, выбирается координата с максимальной изменчивостью после ignore-first-meters",
     )
     parser.add_argument(
         "--rolling-window",
         type=int,
         default=64,
-        help="Rolling mean window in traces",
+        help="Окно скользящего среднего в трассах",
     )
     args = parser.parse_args()
 
@@ -176,10 +176,10 @@ def main():
 
     fig, ax = plt.subplots(figsize=(12, 5), constrained_layout=True)
     ax.plot(time_axis_s, signal, color="#4C78A8", linewidth=0.35, alpha=0.45)
-    ax.plot(time_axis_s, signal_rolling, color="#111111", linewidth=1.6, label=f"Rolling mean ({args.rolling_window})")
-    ax.set_xlabel("Time (s)")
-    ax.set_ylabel("Signal")
-    ax.set_title(f"Signal vs time at {coordinate_m:.3f} m (sample {coordinate_index})")
+    ax.plot(time_axis_s, signal_rolling, color="#111111", linewidth=1.6, label=f"Скользящее среднее ({args.rolling_window})")
+    ax.set_xlabel("Время (s)")
+    ax.set_ylabel("Сигнал")
+    ax.set_title(f"Сигнал во времени в {coordinate_m:.3f} m (sample {coordinate_index})")
     ax.grid(alpha=0.25)
     ax.legend()
 

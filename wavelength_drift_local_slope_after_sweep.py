@@ -136,22 +136,22 @@ def save_matlab_bundle(output_dir, stem, suffix_tag, payload):
     script_text = f"""this_dir = fileparts(mfilename('fullpath'));
 data = load(fullfile(this_dir, '{mat_path.name}'));
 
-figure('Color', 'w', 'Name', 'Signed wavelength drift');
+figure('Color', 'w', 'Name', 'Знаковый дрейф длины волны');
 plot(data.merged_time_abs_s, data.merged_delta_lambda_pm, '.', 'Color', [0.6 0.6 0.6], 'MarkerSize', 8);
 hold on;
 plot(data.merged_time_abs_s, data.merged_delta_lambda_pm_rolling, 'k', 'LineWidth', 1.6);
 plot(data.even_time_abs_s, data.even_delta_lambda_pm, '.', 'Color', [0.12 0.47 0.71], 'MarkerSize', 7);
 plot(data.odd_time_abs_s, data.odd_delta_lambda_pm, '.', 'Color', [1.00 0.50 0.05], 'MarkerSize', 7);
-grid on; xlabel('Time (s)'); ylabel('Signed \\Delta\\lambda (pm)');
-title('Signed drift from local last-sweep slope');
-legend('Merged raw', 'Merged rolling', 'Even', 'Odd', 'Location', 'best');
+grid on; xlabel('Время (s)'); ylabel('Знаковый \\Delta\\lambda (pm)');
+title('Знаковый дрейф по local-slope последнего свипа');
+legend('Объединённые raw', 'Объединённые rolling', 'Чётные', 'Нечётные', 'Location', 'best');
 
-figure('Color', 'w', 'Name', 'Fit quality');
+figure('Color', 'w', 'Name', 'Качество fit-а');
 plot(data.merged_time_abs_s, data.merged_fit_corr, '.', 'Color', [0.12 0.47 0.71], 'MarkerSize', 8);
 hold on;
 plot(data.merged_time_abs_s, data.merged_fit_corr_rolling, 'k', 'LineWidth', 1.6);
-grid on; xlabel('Time (s)'); ylabel('Fit correlation');
-title('Local slope fit quality');
+grid on; xlabel('Время (s)'); ylabel('Корреляция fit-а');
+title('Качество local-slope fit-а');
 """
     script_path.write_text(script_text, encoding="utf-8")
     return mat_path, script_path
@@ -159,27 +159,27 @@ title('Local slope fit quality');
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Estimate signed post-sweep wavelength drift from the local derivative measured in the last sweep."
+        description="Оценить знаковый дрейф длины волны после свипа по локальной производной, измеренной на последнем свипе."
     )
-    parser.add_argument("dat_path", help="Path to .dat file")
-    parser.add_argument("--output-dir", default="analysis_outputs", help="Directory for output files")
-    parser.add_argument("--scan-rate", type=float, default=None, help="Optional scan rate override")
-    parser.add_argument("--fiber-z-min", type=float, default=110.0, help="Start of real fiber region in meters")
-    parser.add_argument("--fiber-z-max", type=float, default=360.0, help="End of real fiber region in meters")
-    parser.add_argument("--baseline-tail-m", type=float, default=50.0, help="Subtract per-trace baseline from last this many meters")
-    parser.add_argument("--reset-period-ms", type=float, default=76.8, help="Accepted saw sweep period in milliseconds")
-    parser.add_argument("--reset-anchor-time-s", type=float, default=0.0919, help="One accepted reset/sweep-boundary time in seconds")
-    parser.add_argument("--max-reset-time-s", type=float, default=4.45, help="Last accepted reset grid time upper bound")
-    parser.add_argument("--sweep-span-pm", type=float, default=3.125, help="Wavelength span of one saw sweep")
-    parser.add_argument("--sweep-index", type=int, default=-1, help="Sweep interval index to use as local derivative reference")
-    parser.add_argument("--post-start-s", type=float, default=None, help="Post-sweep analysis start; default is selected sweep end")
-    parser.add_argument("--post-end-s", type=float, default=5.5, help="Post-sweep analysis end")
-    parser.add_argument("--block-size", type=int, default=64, help="Average this many same-parity post traces per estimate")
-    parser.add_argument("--initial-window-blocks", type=int, default=4, help="Initial post blocks used to choose lambda0 and zero")
-    parser.add_argument("--local-half-width-pm", type=float, default=0.35, help="Half-width around lambda0 used to fit dTrace/dlambda")
-    parser.add_argument("--local-min-points", type=int, default=40, help="Minimum reference sweep traces used for local slope")
-    parser.add_argument("--slope-percentile", type=float, default=50.0, help="Use coordinates with |slope| above this percentile")
-    parser.add_argument("--rolling-window", type=int, default=9, help="Rolling window over block estimates")
+    parser.add_argument("dat_path", help="Путь к .dat-файлу")
+    parser.add_argument("--output-dir", default="analysis_outputs", help="Каталог для выходных файлов")
+    parser.add_argument("--scan-rate", type=float, default=None, help="Необязательная частота записи рефлектограмм")
+    parser.add_argument("--fiber-z-min", type=float, default=110.0, help="Начало полезного участка волокна в метрах")
+    parser.add_argument("--fiber-z-max", type=float, default=360.0, help="Конец полезного участка волокна в метрах")
+    parser.add_argument("--baseline-tail-m", type=float, default=50.0, help="Вычесть baseline каждой трассы по последним N метрам")
+    parser.add_argument("--reset-period-ms", type=float, default=76.8, help="Принятый период пилообразного свипа в ms")
+    parser.add_argument("--reset-anchor-time-s", type=float, default=0.0919, help="Одно принятое время сброса/границы свипа")
+    parser.add_argument("--max-reset-time-s", type=float, default=4.45, help="Верхняя граница времени для принятой сетки сбросов")
+    parser.add_argument("--sweep-span-pm", type=float, default=3.125, help="Размах одного пилообразного свипа в pm")
+    parser.add_argument("--sweep-index", type=int, default=-1, help="Индекс свипа, используемого как референс локальной производной")
+    parser.add_argument("--post-start-s", type=float, default=None, help="Начало post-sweep анализа; по умолчанию конец выбранного свипа")
+    parser.add_argument("--post-end-s", type=float, default=5.5, help="Конец post-sweep анализа")
+    parser.add_argument("--block-size", type=int, default=64, help="Усреднять столько same-parity post-трасс на одну оценку")
+    parser.add_argument("--initial-window-blocks", type=int, default=4, help="Число первых post-блоков для выбора lambda0 и нуля")
+    parser.add_argument("--local-half-width-pm", type=float, default=0.35, help="Полуширина окна вокруг lambda0 для fit-а dTrace/dlambda")
+    parser.add_argument("--local-min-points", type=int, default=40, help="Минимальное число референсных трасс свипа для локального slope")
+    parser.add_argument("--slope-percentile", type=float, default=50.0, help="Использовать координаты, где |slope| выше этого процентиля")
+    parser.add_argument("--rolling-window", type=int, default=9, help="Окно rolling average по блочным оценкам")
     args = parser.parse_args()
 
     dat_path = Path(args.dat_path)
@@ -288,14 +288,14 @@ def main():
 
     suffix = "wavelength_drift_local_slope_after_last_sweep"
     fig1, ax1 = plt.subplots(figsize=(12, 5), constrained_layout=True)
-    ax1.plot(merged_time_abs_s, merged_delta_lambda_pm, ".", color="#A8A8A8", markersize=5, alpha=0.55, label="Merged raw")
+    ax1.plot(merged_time_abs_s, merged_delta_lambda_pm, ".", color="#A8A8A8", markersize=5, alpha=0.55, label="Объединённые raw")
     ax1.plot(merged_time_abs_s, merged_delta_lambda_pm_rolling, color="#111111", linewidth=1.6, label=f"Rolling ({args.rolling_window})")
-    ax1.plot(parity_results["even"]["time_abs_s"], parity_results["even"]["delta_lambda_pm"], ".", color="#1F77B4", markersize=4, alpha=0.70, label="Even")
-    ax1.plot(parity_results["odd"]["time_abs_s"], parity_results["odd"]["delta_lambda_pm"], ".", color="#FF7F0E", markersize=4, alpha=0.70, label="Odd")
-    ax1.axvline(sweep_end_s, color="#D62728", linewidth=1.0, alpha=0.8, label="Last sweep end")
-    ax1.set_xlabel("Time (s)")
-    ax1.set_ylabel("Signed wavelength drift (pm)")
-    ax1.set_title("Signed wavelength drift from local last-sweep slope")
+    ax1.plot(parity_results["even"]["time_abs_s"], parity_results["even"]["delta_lambda_pm"], ".", color="#1F77B4", markersize=4, alpha=0.70, label="Чётные")
+    ax1.plot(parity_results["odd"]["time_abs_s"], parity_results["odd"]["delta_lambda_pm"], ".", color="#FF7F0E", markersize=4, alpha=0.70, label="Нечётные")
+    ax1.axvline(sweep_end_s, color="#D62728", linewidth=1.0, alpha=0.8, label="Конец последнего свипа")
+    ax1.set_xlabel("Время (s)")
+    ax1.set_ylabel("Знаковый дрейф длины волны (pm)")
+    ax1.set_title("Знаковый дрейф длины волны по локальному slope последнего свипа")
     ax1.grid(alpha=0.25)
     ax1.legend(loc="best")
     drift_png_path = output_dir / f"{dat_path.stem}_{suffix}.png"
@@ -303,12 +303,12 @@ def main():
     plt.close(fig1)
 
     fig2, ax2 = plt.subplots(figsize=(12, 4.5), constrained_layout=True)
-    ax2.plot(merged_time_abs_s, merged_fit_corr, ".", color="#4C78A8", markersize=5, alpha=0.65, label="Raw")
+    ax2.plot(merged_time_abs_s, merged_fit_corr, ".", color="#4C78A8", markersize=5, alpha=0.65, label="Сырые точки")
     ax2.plot(merged_time_abs_s, merged_fit_corr_rolling, color="#111111", linewidth=1.6, label=f"Rolling ({args.rolling_window})")
-    ax2.axvline(sweep_end_s, color="#D62728", linewidth=1.0, alpha=0.8, label="Last sweep end")
-    ax2.set_xlabel("Time (s)")
-    ax2.set_ylabel("Linear fit correlation")
-    ax2.set_title("Local slope fit quality")
+    ax2.axvline(sweep_end_s, color="#D62728", linewidth=1.0, alpha=0.8, label="Конец последнего свипа")
+    ax2.set_xlabel("Время (s)")
+    ax2.set_ylabel("Корреляция линейного fit-а")
+    ax2.set_title("Качество local-slope fit-а")
     ax2.grid(alpha=0.25)
     ax2.legend(loc="best")
     quality_png_path = output_dir / f"{dat_path.stem}_{suffix}_fit_quality.png"

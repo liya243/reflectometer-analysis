@@ -45,7 +45,7 @@ plot(data.distance_m, data.odd_profile, 'LineWidth', 1.6);
 grid on;
 xlabel('Distance (m)');
 ylabel('Signal relative to zero level');
-title(sprintf('Pulse profile, zero level at %.3f m', data.zero_level_m));
+title(sprintf('Форма импульса, нулевой уровень в %.3f m', data.zero_level_m));
 legend('Even reflectograms', 'Odd reflectograms', 'Location', 'best');
 
 % Optional: save native MATLAB figure file after opening it.
@@ -61,48 +61,48 @@ legend('Even reflectograms', 'Odd reflectograms', 'Location', 'best');
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Build mean even/odd pulse profiles from a service zone."
+        description="Построить средние формы чётного и нечётного импульса по сервисной зоне."
     )
-    parser.add_argument("dat_path", help="Path to the .dat file")
+    parser.add_argument("dat_path", help="Путь к .dat-файлу")
     parser.add_argument(
         "--output-dir",
         default="analysis_outputs",
-        help="Directory for output files",
+        help="Каталог для выходных файлов",
     )
     parser.add_argument(
         "--scan-rate",
         type=float,
         default=None,
-        help="Optional override for reflectogram scan rate in Hz",
+        help="Необязательная частота записи рефлектограмм в Hz",
     )
     parser.add_argument(
         "--pulse-z-min",
         type=float,
         default=70.0,
-        help="Start of the service-zone pulse window in meters",
+        help="Начало окна импульса в сервисной зоне, в метрах",
     )
     parser.add_argument(
         "--pulse-z-max",
         type=float,
         default=90.0,
-        help="End of the service-zone pulse window in meters",
+        help="Конец окна импульса в сервисной зоне, в метрах",
     )
     parser.add_argument(
         "--zero-level-z",
         type=float,
         default=70.0,
-        help="Distance in meters used as zero level for the pulse profile",
+        help="Координата в метрах, используемая как нулевой уровень формы импульса",
     )
     parser.add_argument(
         "--positive-only",
         action="store_true",
-        help="Keep only coordinates where the mean even or odd pulse profile is above zero",
+        help="Оставить только координаты, где средний чётный или нечётный профиль импульса выше нуля",
     )
     parser.add_argument(
         "--baseline-tail-m",
         type=float,
         default=None,
-        help="Subtract per-trace baseline estimated from the last this many meters",
+        help="Вычесть базовый уровень каждой трассы, оцененный по последним N метрам",
     )
     args = parser.parse_args()
 
@@ -149,14 +149,14 @@ def main():
         positive_mask = np.ones(pulse_distance_m.size, dtype=bool)
 
     fig, ax = plt.subplots(figsize=(12, 5), constrained_layout=True)
-    ax.plot(pulse_distance_m, even_profile, marker="o", linewidth=1.6, markersize=4.0, label="Even reflectograms")
-    ax.plot(pulse_distance_m, odd_profile, marker="o", linewidth=1.6, markersize=4.0, label="Odd reflectograms")
+    ax.plot(pulse_distance_m, even_profile, marker="o", linewidth=1.6, markersize=4.0, label="Чётные рефлектограммы")
+    ax.plot(pulse_distance_m, odd_profile, marker="o", linewidth=1.6, markersize=4.0, label="Нечётные рефлектограммы")
     ax.axhline(0.0, color="#666666", linestyle="--", linewidth=0.8)
     if pulse_distance_m[0] <= zero_level_m <= pulse_distance_m[-1]:
         ax.axvline(zero_level_m, color="#666666", linestyle=":", linewidth=0.8, label=f"Zero level {zero_level_m:.3f} m")
-    ax.set_xlabel("Distance (m)")
-    ax.set_ylabel("Signal relative to zero level")
-    ax.set_title("Service-zone pulse profile by parity")
+    ax.set_xlabel("Расстояние (m)")
+    ax.set_ylabel("Сигнал относительно нулевого уровня")
+    ax.set_title("Форма импульса в сервисной зоне по чётности")
     ax.grid(alpha=0.25)
     ax.legend()
 

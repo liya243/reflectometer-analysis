@@ -317,8 +317,8 @@ print(
 )
 
 plt.figure(figsize=(10, 4))
-plt.plot(support_z, even_weights, lw=1.6, label="even pulse weights")
-plt.plot(support_z, odd_weights, lw=1.6, label="odd pulse weights")
+plt.plot(support_z, even_weights, lw=1.6, label="веса чётного импульса")
+plt.plot(support_z, odd_weights, lw=1.6, label="веса нечётного импульса")
 plt.xlabel("Coordinate z, m")
 plt.ylabel("Weight A_m")
 plt.title("Pulse weights used in uniqueness test")
@@ -331,13 +331,13 @@ axes[0].plot(
     even_delta_beta[::trace_fit_stride],
     target_even_trace[::trace_fit_stride],
     lw=1.0,
-    label="measured",
+    label="измерено",
 )
 axes[0].plot(
     even_delta_beta[::trace_fit_stride],
     single_model_even,
     lw=1.1,
-    label="single-coordinate model",
+    label="модель одной координаты",
 )
 for result_item in joint_results:
     axes[0].plot(
@@ -346,21 +346,21 @@ for result_item in joint_results:
         lw=1.0,
         label=f"{result_item['coord_count']}-coord joint model",
     )
-axes[0].set_ylabel("Even signal")
-axes[0].set_title(f"Central trace comparison at z = {target_z:.3f} m")
+axes[0].set_ylabel("Чётный сигнал")
+axes[0].set_title(f"Сравнение центральной трассы при z = {target_z:.3f} m")
 axes[0].grid(True, alpha=0.3)
 axes[0].legend()
 axes[1].plot(
     odd_delta_beta[::trace_fit_stride],
     target_odd_trace[::trace_fit_stride],
     lw=1.0,
-    label="measured",
+    label="измерено",
 )
 axes[1].plot(
     odd_delta_beta[::trace_fit_stride],
     single_model_odd,
     lw=1.1,
-    label="single-coordinate model",
+    label="модель одной координаты",
 )
 for result_item in joint_results:
     axes[1].plot(
@@ -370,7 +370,7 @@ for result_item in joint_results:
         label=f"{result_item['coord_count']}-coord joint model",
     )
 axes[1].set_xlabel(r"$\Delta \beta$, 1/m")
-axes[1].set_ylabel("Odd signal")
+axes[1].set_ylabel("Нечётный сигнал")
 axes[1].grid(True, alpha=0.3)
 axes[1].legend()
 fig.tight_layout()
@@ -382,7 +382,7 @@ plt.plot(
     "o-",
     lw=1.3,
     ms=4,
-    label="single-coordinate fit",
+    label="fit одной координаты",
 )
 markers = ["s-", "^-", "d-"]
 for idx, result_item in enumerate(joint_results):
@@ -412,33 +412,33 @@ for col, z_val in enumerate(largest_span_result["selected_z"]):
         largest_span_result["joint_even_delta_beta"],
         largest_span_result["joint_even_traces"][:, col],
         lw=1.0,
-        label="measured",
+        label="измерено",
     )
     axes[0, col].plot(
         largest_span_result["joint_even_delta_beta"],
         largest_span_result["fit"]["modeled_even_traces"][:, col],
         lw=1.1,
-        label="joint model",
+        label="совместная модель",
     )
-    axes[0, col].set_title(f"Even z = {z_val:.3f} m")
+    axes[0, col].set_title(f"Чётные z = {z_val:.3f} m")
     axes[0, col].grid(True, alpha=0.3)
     axes[1, col].plot(
         largest_span_result["joint_odd_delta_beta"],
         largest_span_result["joint_odd_traces"][:, col],
         lw=1.0,
-        label="measured",
+        label="измерено",
     )
     axes[1, col].plot(
         largest_span_result["joint_odd_delta_beta"],
         largest_span_result["fit"]["modeled_odd_traces"][:, col],
         lw=1.1,
-        label="joint model",
+        label="совместная модель",
     )
-    axes[1, col].set_title(f"Odd z = {z_val:.3f} m")
+    axes[1, col].set_title(f"Нечётные z = {z_val:.3f} m")
     axes[1, col].grid(True, alpha=0.3)
     axes[1, col].set_xlabel(r"$\Delta \beta$, 1/m")
-axes[0, 0].set_ylabel("Signal")
-axes[1, 0].set_ylabel("Signal")
+axes[0, 0].set_ylabel("Сигнал")
+axes[1, 0].set_ylabel("Сигнал")
 axes[0, 0].legend()
 axes[1, 0].legend()
 fig.tight_layout()

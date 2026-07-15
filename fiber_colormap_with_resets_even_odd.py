@@ -46,8 +46,8 @@ def render_colormap(ax, view, distance_m, time_s, reset_times_s, title, vmin, vm
     for reset_time_s in reset_times_s:
         ax.axhline(float(reset_time_s), color="#D62728", linewidth=0.8, alpha=0.9)
     ax.set_title(title)
-    ax.set_xlabel("Distance (m)")
-    ax.set_ylabel("Time (s)")
+    ax.set_xlabel("Расстояние (m)")
+    ax.set_ylabel("Время (s)")
     return im
 
 
@@ -161,65 +161,65 @@ end
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Render baseline-subtracted even/odd fiber colormaps with detected sweep ends."
+        description="Построить цветные карты чётных/нечётных трасс с вычитанием baseline и найденными концами свипов."
     )
-    parser.add_argument("dat_path", help="Path to the .dat file")
-    parser.add_argument("--output-dir", default="analysis_outputs", help="Directory for output files")
-    parser.add_argument("--scan-rate", type=float, default=None, help="Optional override for reflectogram scan rate in Hz")
-    parser.add_argument("--fiber-z-min", type=float, default=101.0, help="Start of real fiber region in meters")
-    parser.add_argument("--fiber-z-max", type=float, default=280.0, help="End of real fiber region in meters")
-    parser.add_argument("--baseline-tail-m", type=float, default=50.0, help="Subtract per-trace baseline from the last this many meters")
-    parser.add_argument("--trace-stride-full", type=int, default=4, help="Keep every Nth trace in the full-time colormap")
-    parser.add_argument("--trace-stride-zoom", type=int, default=1, help="Keep every Nth trace in the zoomed colormap")
-    parser.add_argument("--sample-stride", type=int, default=1, help="Keep every Nth sample along the distance axis")
-    parser.add_argument("--rolling-window", type=int, default=64, help="Reset detector smoothing window in traces")
-    parser.add_argument("--min-period-s", type=float, default=0.05, help="Minimum sweep period for reset detection")
-    parser.add_argument("--max-period-s", type=float, default=None, help="Maximum sweep period for reset detection")
-    parser.add_argument("--prominence-sigma", type=float, default=3.0, help="Reset detector threshold in robust sigma units")
-    parser.add_argument("--refine-window-fraction", type=float, default=0.15, help="Local refinement window as fraction of detected period")
-    parser.add_argument("--reset-time-shift-ms", type=float, default=0.0, help="Shift detected sweep-end times later by this many milliseconds")
+    parser.add_argument("dat_path", help="Путь к .dat-файлу")
+    parser.add_argument("--output-dir", default="analysis_outputs", help="Каталог для выходных файлов")
+    parser.add_argument("--scan-rate", type=float, default=None, help="Необязательная частота записи рефлектограмм в Hz")
+    parser.add_argument("--fiber-z-min", type=float, default=101.0, help="Начало полезного участка волокна в метрах")
+    parser.add_argument("--fiber-z-max", type=float, default=280.0, help="Конец полезного участка волокна в метрах")
+    parser.add_argument("--baseline-tail-m", type=float, default=50.0, help="Вычесть baseline каждой трассы по последним N метрам")
+    parser.add_argument("--trace-stride-full", type=int, default=4, help="Оставлять каждую N-ю трассу на полной карте")
+    parser.add_argument("--trace-stride-zoom", type=int, default=1, help="Оставлять каждую N-ю трассу на увеличенной карте")
+    parser.add_argument("--sample-stride", type=int, default=1, help="Оставлять каждый N-й отсчёт по оси расстояния")
+    parser.add_argument("--rolling-window", type=int, default=64, help="Окно сглаживания детектора сбросов в трассах")
+    parser.add_argument("--min-period-s", type=float, default=0.05, help="Минимальный период свипа для детектора сбросов")
+    parser.add_argument("--max-period-s", type=float, default=None, help="Максимальный период свипа для детектора сбросов")
+    parser.add_argument("--prominence-sigma", type=float, default=3.0, help="Порог детектора сбросов в робастных sigma")
+    parser.add_argument("--refine-window-fraction", type=float, default=0.15, help="Окно локального уточнения как доля найденного периода")
+    parser.add_argument("--reset-time-shift-ms", type=float, default=0.0, help="Сдвинуть найденные времена сбросов позже на это число ms")
     parser.add_argument(
         "--reset-period-override-ms",
         type=float,
         default=None,
-        help="Draw reset lines on this fixed period in milliseconds instead of the detected FFT period",
+        help="Рисовать линии сбросов с этим фиксированным периодом в ms вместо найденного FFT-периода",
     )
     parser.add_argument(
         "--reset-anchor-time-s",
         type=float,
         default=None,
-        help="Anchor time for a fixed reset grid; the grid is extended backward and forward by the override period",
+        help="Опорное время для фиксированной сетки сбросов; сетка продолжается назад и вперёд с заданным периодом",
     )
     parser.add_argument(
         "--shared-reset-detection",
         action="store_true",
-        help="Detect reset times once from all traces together and draw the same red lines on even/odd maps",
+        help="Искать времена сбросов один раз по всем трассам и рисовать одинаковые красные линии на even/odd картах",
     )
     parser.add_argument(
         "--max-reset-time-s",
         type=float,
         default=None,
-        help="Keep only detected reset times not later than this absolute time in seconds",
+        help="Оставлять только времена сбросов не позже этого абсолютного времени в секундах",
     )
     parser.add_argument(
         "--reset-detection-end-time-s",
         type=float,
         default=None,
-        help="Use only traces up to this absolute time in seconds when detecting modulation period boundaries",
+        help="Использовать только трассы до этого абсолютного времени при поиске границ периодов модуляции",
     )
     parser.add_argument(
         "--regularize-reset-grid",
         action="store_true",
-        help="Project detected reset times onto a regular time grid with the detected period",
+        help="Спроецировать найденные времена сбросов на регулярную временную сетку с найденным периодом",
     )
     parser.add_argument(
         "--tail-period-count",
         type=int,
         default=8,
-        help="How many last modulation periods to show in the tail zoom view",
+        help="Сколько последних периодов модуляции показать на tail zoom",
     )
-    parser.add_argument("--lower-percentile", type=float, default=1.0, help="Lower percentile for color clipping")
-    parser.add_argument("--upper-percentile", type=float, default=99.0, help="Upper percentile for color clipping")
+    parser.add_argument("--lower-percentile", type=float, default=1.0, help="Нижний процентиль для ограничения цветовой шкалы")
+    parser.add_argument("--upper-percentile", type=float, default=99.0, help="Верхний процентиль для ограничения цветовой шкалы")
     args = parser.parse_args()
 
     dat_path = Path(args.dat_path)
@@ -358,7 +358,7 @@ def main():
             vmin,
             vmax,
         )
-        full_fig.colorbar(im, ax=ax, label="Signal")
+        full_fig.colorbar(im, ax=ax, label="Сигнал")
     suffix = (
         f"fiber_{int(round(args.fiber_z_min))}_{int(round(args.fiber_z_max))}m"
         f"_even_odd_colormap_resets_baseline_tail_{int(round(args.baseline_tail_m))}m"
@@ -388,7 +388,7 @@ def main():
             float(time_s[-1]),
         )
         ax.set_ylim(y0, y1)
-        zoom_fig.colorbar(im, ax=ax, label="Signal")
+        zoom_fig.colorbar(im, ax=ax, label="Сигнал")
     zoom_png_path = output_dir / f"{dat_path.stem}_{suffix}_zoom.png"
     zoom_fig.savefig(zoom_png_path, dpi=200)
     plt.close(zoom_fig)
@@ -420,7 +420,7 @@ def main():
             tail_zoom_start_s = y0
             tail_zoom_end_s = y1
         ax.set_ylim(y0, y1)
-        tail_fig.colorbar(im, ax=ax, label="Signal")
+        tail_fig.colorbar(im, ax=ax, label="Сигнал")
     tail_zoom_png_path = output_dir / f"{dat_path.stem}_{suffix}_tail_zoom.png"
     tail_fig.savefig(tail_zoom_png_path, dpi=200)
     plt.close(tail_fig)

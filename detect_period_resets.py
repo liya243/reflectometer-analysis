@@ -169,55 +169,55 @@ def refine_peaks_with_metric(coarse_peaks, metric, search_radius_traces):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Detect saw-reset moments from the dominant global modulation mode."
+        description="Найти моменты сброса пилообразной модуляции по доминирующей глобальной моде."
     )
-    parser.add_argument("dat_path", help="Path to the .dat file")
+    parser.add_argument("dat_path", help="Путь к .dat-файлу")
     parser.add_argument(
         "--output-dir",
         default="analysis_outputs",
-        help="Directory for output files",
+        help="Каталог для выходных файлов",
     )
     parser.add_argument(
         "--ignore-first-meters",
         type=float,
         default=100.0,
-        help="Ignore this many meters from the beginning of each reflectogram",
+        help="Игнорировать столько метров от начала каждой рефлектограммы",
     )
     parser.add_argument(
         "--rolling-window",
         type=int,
         default=64,
-        help="Smoothing window in traces",
+        help="Окно сглаживания в трассах",
     )
     parser.add_argument(
         "--min-period-s",
         type=float,
         default=0.05,
-        help="Minimum period to consider in the FFT search",
+        help="Минимальный период, учитываемый при FFT-поиске",
     )
     parser.add_argument(
         "--max-period-s",
         type=float,
         default=None,
-        help="Maximum period to consider in the FFT search; default is half the record duration",
+        help="Максимальный период для FFT-поиска; по умолчанию половина длительности записи",
     )
     parser.add_argument(
         "--prominence-sigma",
         type=float,
         default=3.0,
-        help="Detection threshold in robust sigma units for |d(score)/dt|",
+        help="Порог детектора в робастных sigma для |d(score)/dt|",
     )
     parser.add_argument(
         "--parity",
         choices=["all", "even", "odd"],
         default="all",
-        help="Use all reflectograms or only one parity subset",
+        help="Использовать все рефлектограммы или только одну чётность",
     )
     parser.add_argument(
         "--refine-window-fraction",
         type=float,
         default=0.15,
-        help="Refine each coarse reset time within this fraction of the detected period using frame-to-frame change",
+        help="Уточнять каждое грубое время сброса в окне этой доли периода по изменению соседних кадров",
     )
     args = parser.parse_args()
 
@@ -292,8 +292,8 @@ def main():
     axes[0].plot(time_axis_s, score, color="#4C78A8", linewidth=0.3, alpha=0.35)
     axes[0].plot(time_axis_s, score_smooth, color="#111111", linewidth=1.5, label=f"Rolling mean ({args.rolling_window})")
     if peaks.size > 0:
-        axes[0].scatter(reset_times_s, score_smooth[peaks], color="#D62728", s=28, label="Detected resets", zorder=5)
-    axes[0].set_ylabel("Dominant score")
+        axes[0].scatter(reset_times_s, score_smooth[peaks], color="#D62728", s=28, label="Найденные сбросы", zorder=5)
+    axes[0].set_ylabel("Доминирующий score")
     axes[0].set_title(
         f"Reset detection from dominant global modulation mode (FFT period {dominant_period_s:.4f} s)"
     )
@@ -303,15 +303,15 @@ def main():
     period_axis_s = 1.0 / freqs_hz[valid_bins]
     order = np.argsort(period_axis_s)
     axes[1].plot(period_axis_s[order], power[valid_bins][order], color="#4C78A8", linewidth=1.0)
-    axes[1].axvline(dominant_period_s, color="#D62728", linestyle="--", linewidth=1.0, label="Detected period")
-    axes[1].set_xlabel("Period (s)")
-    axes[1].set_ylabel("FFT power")
+    axes[1].axvline(dominant_period_s, color="#D62728", linestyle="--", linewidth=1.0, label="Найденный период")
+    axes[1].set_xlabel("Период (s)")
+    axes[1].set_ylabel("Мощность FFT")
     axes[1].grid(alpha=0.25)
     axes[1].legend()
 
-    axes[2].plot(derivative_time_s, change_metric, color="#2E86AB", linewidth=0.5, label="Frame-to-frame RMS change")
+    axes[2].plot(derivative_time_s, change_metric, color="#2E86AB", linewidth=0.5, label="RMS-изменение соседних кадров")
     if peaks.size > 0:
-        axes[2].scatter(reset_times_s, change_metric[peaks], color="#D62728", s=28, zorder=5, label="Detected resets")
+        axes[2].scatter(reset_times_s, change_metric[peaks], color="#D62728", s=28, zorder=5, label="Найденные сбросы")
     for k in range(0, int(np.ceil((abs_derivative.size - dominant_phase) / float(period_traces)))):
         local_center = dominant_phase + k * period_traces
         if local_center + 1 >= selected_global_indices.size:
@@ -321,8 +321,8 @@ def main():
         )
         if center_time_s <= derivative_time_s[-1]:
             axes[2].axvline(center_time_s, color="#999999", linewidth=0.4, alpha=0.25)
-    axes[2].set_xlabel("Time (s)")
-    axes[2].set_ylabel("Trace change")
+    axes[2].set_xlabel("Время (s)")
+    axes[2].set_ylabel("Изменение трассы")
     axes[2].grid(alpha=0.25)
     axes[2].legend()
 

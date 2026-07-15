@@ -208,24 +208,24 @@ legend('Even', 'Odd', 'Location', 'best');
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Compute lag harmonics for each wavelength sweep from even and odd reflectograms."
+        description="Рассчитать гармоники по лагам для каждого свипа длины волны из чётных и нечётных рефлектограмм."
     )
-    parser.add_argument("dat_path", help="Path to the .dat file")
-    parser.add_argument("--output-dir", default="analysis_outputs", help="Directory for output files")
-    parser.add_argument("--scan-rate", type=float, default=None, help="Optional override for reflectogram scan rate in Hz")
-    parser.add_argument("--fiber-z-min", type=float, default=100.0, help="Start of real fiber region in meters")
-    parser.add_argument("--fiber-z-max", type=float, default=280.0, help="End of real fiber region in meters")
-    parser.add_argument("--pulse-z-min", type=float, default=75.0, help="Start of pulse support in meters")
-    parser.add_argument("--pulse-z-max", type=float, default=85.0, help="End of pulse support in meters")
-    parser.add_argument("--lambda0-nm", type=float, default=1550.0, help="Central wavelength in nm")
-    parser.add_argument("--sweep-span-pm", type=float, default=0.78, help="Wavelength span of one sweep in pm")
-    parser.add_argument("--rolling-window", type=int, default=64, help="Reset detector smoothing window in traces")
-    parser.add_argument("--min-period-s", type=float, default=0.05, help="Minimum sweep period for reset detection")
-    parser.add_argument("--prominence-sigma", type=float, default=3.0, help="Reset detector threshold in robust sigma units")
-    parser.add_argument("--refine-window-fraction", type=float, default=0.15, help="Local refinement window as fraction of detected period")
-    parser.add_argument("--reset-time-shift-ms", type=float, default=0.0, help="Shift detected sweep-end times later by this many milliseconds")
-    parser.add_argument("--plot-sweep-index", type=int, default=0, help="Zero-based sweep index to plot as |H_n(z)| heatmap")
-    parser.add_argument("--baseline-tail-m", type=float, default=None, help="Subtract per-trace baseline estimated from the last this many meters")
+    parser.add_argument("dat_path", help="Путь к .dat-файлу")
+    parser.add_argument("--output-dir", default="analysis_outputs", help="Каталог для выходных файлов")
+    parser.add_argument("--scan-rate", type=float, default=None, help="Необязательная частота записи рефлектограмм в Hz")
+    parser.add_argument("--fiber-z-min", type=float, default=100.0, help="Начало полезного участка волокна в метрах")
+    parser.add_argument("--fiber-z-max", type=float, default=280.0, help="Конец полезного участка волокна в метрах")
+    parser.add_argument("--pulse-z-min", type=float, default=75.0, help="Начало поддержки импульса в метрах")
+    parser.add_argument("--pulse-z-max", type=float, default=85.0, help="Конец поддержки импульса в метрах")
+    parser.add_argument("--lambda0-nm", type=float, default=1550.0, help="Центральная длина волны в nm")
+    parser.add_argument("--sweep-span-pm", type=float, default=0.78, help="Размах одного свипа длины волны в pm")
+    parser.add_argument("--rolling-window", type=int, default=64, help="Окно сглаживания детектора сбросов в трассах")
+    parser.add_argument("--min-period-s", type=float, default=0.05, help="Минимальный период свипа для детектора сбросов")
+    parser.add_argument("--prominence-sigma", type=float, default=3.0, help="Порог детектора сбросов в робастных sigma")
+    parser.add_argument("--refine-window-fraction", type=float, default=0.15, help="Окно локального уточнения как доля найденного периода")
+    parser.add_argument("--reset-time-shift-ms", type=float, default=0.0, help="Сдвинуть найденные времена сбросов позже на это число ms")
+    parser.add_argument("--plot-sweep-index", type=int, default=0, help="Индекс свипа с нуля для построения карты |H_n(z)|")
+    parser.add_argument("--baseline-tail-m", type=float, default=None, help="Вычесть baseline каждой трассы, оцененный по последним N метрам")
     args = parser.parse_args()
 
     dat_path = Path(args.dat_path)
@@ -320,10 +320,10 @@ def main():
             cmap="viridis",
             extent=[lag_indices[0], lag_indices[-1], sweep_index[0], sweep_index[-1]],
         )
-        ax.set_ylabel(f"{parity} sweep")
-        ax.set_title(f"{parity.capitalize()} mean |H_p| per wavelength sweep")
-        heatmap_fig.colorbar(im, ax=ax, label="Mean |H_p| over fiber")
-    heatmap_axes[-1].set_xlabel("Lag p")
+        ax.set_ylabel(f"{parity} свип")
+        ax.set_title(f"{parity.capitalize()} среднее |H_p| по свипам длины волны")
+        heatmap_fig.colorbar(im, ax=ax, label="Среднее |H_p| по волокну")
+    heatmap_axes[-1].set_xlabel("Лаг p")
     heatmap_png_path = output_dir / f"{dat_path.stem}_harmonics_mean_abs_heatmap.png"
     heatmap_fig.savefig(heatmap_png_path, dpi=200)
     plt.close(heatmap_fig)
@@ -332,9 +332,9 @@ def main():
     for parity, color in [("even", "#4C78A8"), ("odd", "#F58518")]:
         mean_abs_over_sweeps = np.mean(parity_payload[parity]["mean_abs_harmonics"], axis=0)
         line_ax.plot(lag_indices, mean_abs_over_sweeps, linewidth=1.8, label=f"{parity} mean |H_p|", color=color)
-    line_ax.set_xlabel("Lag p")
-    line_ax.set_ylabel("Mean |H_p|")
-    line_ax.set_title("Sweep-averaged mean absolute harmonics")
+    line_ax.set_xlabel("Лаг p")
+    line_ax.set_ylabel("Среднее |H_p|")
+    line_ax.set_title("Средние по свипам абсолютные гармоники")
     line_ax.grid(alpha=0.25)
     line_ax.legend()
     line_png_path = output_dir / f"{dat_path.stem}_harmonics_mean_abs_vs_lag.png"
@@ -351,10 +351,10 @@ def main():
             cmap="viridis",
             extent=[lag_indices[0], lag_indices[-1], fiber_distance_m[0], fiber_distance_m[-1]],
         )
-        ax.set_ylabel("Distance (m)")
-        ax.set_title(f"{parity.capitalize()} mean |H_p(z)| over sweeps")
-        coord_fig.colorbar(im, ax=ax, label="Mean |H_p(z)|")
-    coord_axes[-1].set_xlabel("Lag p")
+        ax.set_ylabel("Расстояние (m)")
+        ax.set_title(f"{parity.capitalize()} среднее |H_p(z)| по свипам")
+        coord_fig.colorbar(im, ax=ax, label="Среднее |H_p(z)|")
+    coord_axes[-1].set_xlabel("Лаг p")
     coord_png_path = output_dir / f"{dat_path.stem}_harmonics_coordinate_mean_abs_heatmap.png"
     coord_fig.savefig(coord_png_path, dpi=200)
     plt.close(coord_fig)
@@ -365,9 +365,9 @@ def main():
         std_h0 = parity_payload[parity]["std_h0_over_sweeps"]
         h0_ax.plot(fiber_distance_m, mean_h0, linewidth=1.6, color=color, label=f"{parity} mean H0")
         h0_ax.fill_between(fiber_distance_m, mean_h0 - std_h0, mean_h0 + std_h0, color=color, alpha=0.18)
-    h0_ax.set_xlabel("Distance (m)")
+    h0_ax.set_xlabel("Расстояние (m)")
     h0_ax.set_ylabel("H0")
-    h0_ax.set_title("Sweep-averaged H0(z)")
+    h0_ax.set_title("H0(z), усреднённый по свипам")
     h0_ax.grid(alpha=0.25)
     h0_ax.legend()
     h0_png_path = output_dir / f"{dat_path.stem}_harmonics_H0_vs_coordinate.png"
@@ -393,10 +393,10 @@ def main():
             cmap="viridis",
             extent=[lag_indices[0], lag_indices[-1], fiber_distance_m[0], fiber_distance_m[-1]],
         )
-        ax.set_ylabel("Distance (m)")
-        ax.set_title(f"{parity.capitalize()} |H_n(z)| for sweep {args.plot_sweep_index}")
+        ax.set_ylabel("Расстояние (m)")
+        ax.set_title(f"{parity.capitalize()} |H_n(z)| для свипа {args.plot_sweep_index}")
         single_fig.colorbar(im, ax=ax, label="|H_n(z)|")
-    single_axes[-1].set_xlabel("Lag n")
+    single_axes[-1].set_xlabel("Лаг n")
     single_sweep_png_path = output_dir / f"{dat_path.stem}_harmonics_sweep_{args.plot_sweep_index}_coordinate_heatmap.png"
     single_fig.savefig(single_sweep_png_path, dpi=200)
     plt.close(single_fig)

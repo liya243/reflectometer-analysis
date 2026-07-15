@@ -1,57 +1,57 @@
-# Coherent Laser Reflectometer Analysis
+# Анализ данных когерентного лазерного рефлектометра
 
-Python scripts for processing coherent laser reflectometer `.dat` captures:
+Набор Python-скриптов для обработки `.dat`-файлов, записанных когерентным лазерным рефлектометром:
 
-- baseline subtraction from a dark photodiode tail;
-- even/odd reflectogram separation for alternating pulse lengths;
-- colormaps of useful fiber regions with detected saw-sweep reset boundaries;
-- pulse-shape extraction from the service zone;
-- wavelength-sweep harmonic extraction;
-- deconvolution of sweep harmonics into complex amplitudes and phases of discrete reflectors;
-- post-sweep wavelength matching and piezo-driven phase tracking.
+- вычитание базового уровня по тёмному хвосту фотодиода;
+- разделение чётных и нечётных рефлектограмм при чередующихся длинах импульса;
+- построение цветных карт полезного участка волокна с отмеченными границами пилообразных свипов;
+- извлечение формы импульсов из сервисной зоны;
+- расчёт гармоник по свипу длины волны;
+- деконволюция гармоник свипа в комплексные амплитуды и фазы дискретных отражателей;
+- сопоставление длины волны после выключения модуляции с последним свипом;
+- поиск и отслеживание фазового сдвига от пьезоэлемента.
 
-The current scripts were developed around captures where the first `0-110 m` are a service zone,
-the useful fiber starts after that, and the final `50 m` can be used as a dark photodiode baseline.
-Most command line arguments expose those assumptions so that other datasets can be processed without
-editing code.
+Текущие скрипты разрабатывались для записей, где первые `0-110 m` являются сервисной зоной,
+полезное волокно начинается дальше, а последние `50 m` трассы можно использовать как тёмный
+уровень фотодиода. Эти числа не зашиты жёстко: почти все они вынесены в аргументы командной строки.
 
-## Repository Contents
+## Содержимое репозитория
 
-Core data handling:
+Базовая работа с данными:
 
-- `raw_data.py` reads the binary `.dat` format and returns reflectograms as a 2D array.
-- `reflectometer_utils.py` builds the distance axis and subtracts per-trace baseline from the dark tail.
-- `analysis_output_utils.py` contains shared output naming helpers.
+- `raw_data.py` читает бинарный `.dat`-формат и возвращает матрицу рефлектограмм.
+- `reflectometer_utils.py` строит ось расстояний и вычитает базовый уровень по тёмному хвосту.
+- `analysis_output_utils.py` содержит общие функции для имён выходных файлов.
 
-Visualization and preprocessing:
+Визуализация и предварительная обработка:
 
-- `fiber_colormap_with_resets_even_odd.py` creates even/odd fiber colormaps with sweep reset lines.
-- `pulse_profile_even_odd.py` extracts even/odd pulse profiles from the service zone.
-- `match_reference_time_to_last_sweep.py` matches a post-modulation reference trace to the last wavelength sweep by direct correlation.
+- `fiber_colormap_with_resets_even_odd.py` строит цветные карты чётных и нечётных рефлектограмм с линиями сброса свипа.
+- `pulse_profile_even_odd.py` извлекает формы чётного и нечётного импульса из сервисной зоны.
+- `match_reference_time_to_last_sweep.py` сопоставляет трассу после выключения модуляции с последним свипом по корреляции.
 
-Sweep and harmonic analysis:
+Свипы и гармонический анализ:
 
-- `sweep_harmonics_even_odd.py` detects sweep boundaries and computes Fourier harmonics `H_p(z)`.
-- `solve_pairwise_phase_differences.py` solves the local linear system that maps measured harmonics to pair products.
-- `solve_complex_amplitudes_from_harmonics.py` performs the main deconvolution from `H_p(z)` to complex field samples `E_i`.
+- `sweep_harmonics_even_odd.py` находит границы свипов и рассчитывает гармоники `H_p(z)`.
+- `solve_pairwise_phase_differences.py` решает локальную линейную задачу, переводящую измеренные гармоники в попарные произведения.
+- `solve_complex_amplitudes_from_harmonics.py` выполняет основную деконволюцию из `H_p(z)` в комплексные отсчёты поля `E_i`.
 
-Piezo tracking:
+Отслеживание пьезоэлемента:
 
-- `track_two_discrete_piezo_phase.py` finds two adjacent discretes affected by the piezo and tracks their common phase over time.
+- `track_two_discrete_piezo_phase.py` ищет два соседних дискрета, на которые действует пьезоэлемент, и восстанавливает их общий фазовый сдвиг во времени.
 
-Generated files such as `.dat`, `.mat`, `.png`, `.csv`, and `analysis_outputs/` are intentionally ignored by git.
+Сгенерированные файлы `.dat`, `.mat`, `.png`, `.csv` и каталог `analysis_outputs/` намеренно исключены из git.
 
-## Environment
+## Окружение
 
-Tested with Python 3.11/3.13 and these packages:
+Проверялось с Python 3.11/3.13. Зависимости устанавливаются так:
 
 ```bash
 python -m pip install -r requirements.txt
 ```
 
-## Typical Workflow
+## Типичный порядок обработки
 
-Create colormaps for a dataset:
+Построить цветные карты для датасета:
 
 ```bash
 python fiber_colormap_with_resets_even_odd.py mem1_07_10-11_10_22.dat \
@@ -64,7 +64,7 @@ python fiber_colormap_with_resets_even_odd.py mem1_07_10-11_10_22.dat \
   --shared-reset-detection
 ```
 
-Extract pulse shapes:
+Извлечь формы импульсов:
 
 ```bash
 python pulse_profile_even_odd.py mem1_07_10-11_10_22.dat \
@@ -74,7 +74,7 @@ python pulse_profile_even_odd.py mem1_07_10-11_10_22.dat \
   --baseline-tail-m 50
 ```
 
-Recover complex discrete amplitudes from the last sweep:
+Восстановить комплексные амплитуды дискретов по последнему свипу:
 
 ```bash
 python solve_complex_amplitudes_from_harmonics.py mem1_07_10-11_10_22.dat \
@@ -89,7 +89,7 @@ python solve_complex_amplitudes_from_harmonics.py mem1_07_10-11_10_22.dat \
   --direct-iters 20 --direct-damping 0.25 --direct-ridge-lambda 1e-3
 ```
 
-Match a reference near `6 s` to the last sweep by direct correlation:
+Сопоставить референс около `6 s` с последним свипом по прямой корреляции:
 
 ```bash
 python match_reference_time_to_last_sweep.py mem1_07_10-11_10_22.dat \
@@ -103,25 +103,26 @@ python match_reference_time_to_last_sweep.py mem1_07_10-11_10_22.dat \
   --sweep-half-window-traces 4
 ```
 
-## Why `H_p(z)` Alone Does Not Directly Give Post-Sweep Wavelength Drift
+## Почему одни только `H_p(z)` не дают надёжный дрейф длины волны после свипа
 
-During a saw sweep, the trace is sampled over a known wavelength interval. Fourier analysis over that
-interval extracts harmonic coefficients `H_p(z)` that describe how interference terms with lag `p`
-oscillate as wavelength changes. This is powerful while the sweep exists.
+Во время пилообразного свипа трасса измеряется на известном интервале длин волн. Фурье-анализ по
+этому интервалу выделяет коэффициенты `H_p(z)`, описывающие, как интерференционные члены с лагом `p`
+осциллируют при изменении длины волны. Пока свип продолжается, это очень информативная величина.
 
-After modulation is switched off, each time point is only one intensity trace at one unknown wavelength.
-That single trace is not enough to invert the full complex harmonic model uniquely:
+После выключения модуляции в каждый момент времени остаётся только одна интенсивностная трасса при
+одной неизвестной длине волны. Одной такой трассы недостаточно, чтобы однозначно обратить полную
+комплексную модель:
 
-- the measured intensity is real and loses absolute optical phase;
-- phase is periodic modulo `2*pi`, so multiple wavelength shifts can produce similar patterns;
-- piezo motion changes local phases independently of laser wavelength drift;
-- noise and baseline errors can dominate a single trace;
-- if the laser drifts outside the calibrated last-sweep span, the harmonic model is being extrapolated.
+- измеренная интенсивность вещественная и не содержит абсолютной оптической фазы;
+- фаза периодична по модулю `2*pi`, поэтому разные сдвиги длины волны могут выглядеть похоже;
+- пьезоэлемент меняет локальные фазы независимо от дрейфа лазера;
+- шум и ошибки базового уровня могут доминировать в одиночной трассе;
+- если лазер ушёл за диапазон последнего калиброванного свипа, гармоническая модель уже экстраполирует.
 
-For that reason, post-sweep drift is better checked by independent methods:
+Поэтому дрейф после свипа лучше проверять независимыми методами:
 
-- direct trace-bank matching against the last sweep;
-- local-slope fitting only when the laser remains near the calibrated sweep point;
-- using additional external wavelength/current/temperature readbacks when available.
+- прямым сопоставлением трассы с банком трасс последнего свипа;
+- локальным slope-fit только если лазер остался рядом с калиброванной точкой;
+- внешними измерениями тока, температуры или длины волны, если они доступны.
 
-See `docs/deconvolution_algorithm.md` for the full derivation of the harmonic deconvolution.
+Подробный вывод деконволюции гармоник приведён в `docs/deconvolution_algorithm.md`.

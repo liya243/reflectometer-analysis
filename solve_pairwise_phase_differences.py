@@ -152,10 +152,10 @@ subplot(2,1,2);
 imagesc(data.lag_indices, data.chain_distance_m, data.diagonal_amplitude);
 axis xy; colorbar; xlabel('Lag p'); ylabel('Chain distance (m)'); title('|g_p(i)|');
 
-f2 = figure('Color', 'w', 'Name', 'Recovered phase chain');
+f2 = figure('Color', 'w', 'Name', 'Восстановленная фазовая цепочка');
 plot(data.chain_distance_m, data.phase_chain, 'LineWidth', 1.6);
-grid on; xlabel('Chain distance (m)'); ylabel('Recovered phase (rad)');
-title('Recovered phase chain up to global phase');
+grid on; xlabel('Координата цепочки (m)'); ylabel('Восстановленная фаза (rad)');
+title('Восстановленная фазовая цепочка с точностью до глобальной фазы');
 """
     script_path.write_text(script_text, encoding="utf-8")
     return {"mat": mat_path, "script": script_path}
@@ -163,24 +163,24 @@ title('Recovered phase chain up to global phase');
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Solve linear systems for g_p(i) = exp(i(phi_i - phi_{i+p})) from even/odd sweep harmonics."
+        description="Решить линейные системы для g_p(i) = exp(i(phi_i - phi_{i+p})) по чётным/нечётным гармоникам свипа."
     )
-    parser.add_argument("dat_path", help="Path to the .dat file")
-    parser.add_argument("--output-dir", default="analysis_outputs", help="Directory for output files")
-    parser.add_argument("--scan-rate", type=float, default=None, help="Optional override for reflectogram scan rate in Hz")
-    parser.add_argument("--fiber-z-min", type=float, default=100.0, help="Start of real fiber region in meters")
-    parser.add_argument("--fiber-z-max", type=float, default=280.0, help="End of real fiber region in meters")
-    parser.add_argument("--pulse-z-min", type=float, default=75.0, help="Start of pulse support in meters")
-    parser.add_argument("--pulse-z-max", type=float, default=85.0, help="End of pulse support in meters")
-    parser.add_argument("--zero-level-z", type=float, default=70.0, help="Zero level for pulse weights in meters")
-    parser.add_argument("--lambda0-nm", type=float, default=1550.0, help="Central wavelength in nm")
-    parser.add_argument("--sweep-span-pm", type=float, default=0.78, help="Wavelength span of one sweep in pm")
-    parser.add_argument("--rolling-window", type=int, default=64, help="Reset detector smoothing window in traces")
-    parser.add_argument("--min-period-s", type=float, default=0.05, help="Minimum sweep period for reset detection")
-    parser.add_argument("--prominence-sigma", type=float, default=3.0, help="Reset detector threshold in robust sigma units")
-    parser.add_argument("--refine-window-fraction", type=float, default=0.15, help="Local refinement window as fraction of detected period")
-    parser.add_argument("--ridge-lambda", type=float, default=1e-6, help="Ridge regularization for diagonal least squares")
-    parser.add_argument("--amplitude-floor", type=float, default=1e-4, help="Ignore solved g_p(i) with |g_p(i)| below this floor when synchronizing phases")
+    parser.add_argument("dat_path", help="Путь к .dat-файлу")
+    parser.add_argument("--output-dir", default="analysis_outputs", help="Каталог для выходных файлов")
+    parser.add_argument("--scan-rate", type=float, default=None, help="Необязательная частота записи рефлектограмм в Hz")
+    parser.add_argument("--fiber-z-min", type=float, default=100.0, help="Начало полезного участка волокна в метрах")
+    parser.add_argument("--fiber-z-max", type=float, default=280.0, help="Конец полезного участка волокна в метрах")
+    parser.add_argument("--pulse-z-min", type=float, default=75.0, help="Начало поддержки импульса в метрах")
+    parser.add_argument("--pulse-z-max", type=float, default=85.0, help="Конец поддержки импульса в метрах")
+    parser.add_argument("--zero-level-z", type=float, default=70.0, help="Координата нулевого уровня для весов импульса")
+    parser.add_argument("--lambda0-nm", type=float, default=1550.0, help="Центральная длина волны в nm")
+    parser.add_argument("--sweep-span-pm", type=float, default=0.78, help="Размах одного свипа длины волны в pm")
+    parser.add_argument("--rolling-window", type=int, default=64, help="Окно сглаживания детектора сбросов в трассах")
+    parser.add_argument("--min-period-s", type=float, default=0.05, help="Минимальный период свипа для детектора сбросов")
+    parser.add_argument("--prominence-sigma", type=float, default=3.0, help="Порог детектора сбросов в робастных sigma")
+    parser.add_argument("--refine-window-fraction", type=float, default=0.15, help="Окно локального уточнения как доля найденного периода")
+    parser.add_argument("--ridge-lambda", type=float, default=1e-6, help="Ridge-регуляризация для линейной МНК-задачи по диагоналям")
+    parser.add_argument("--amplitude-floor", type=float, default=1e-4, help="Игнорировать g_p(i) ниже этого порога при синхронизации фаз")
     args = parser.parse_args()
 
     dat_path = Path(args.dat_path)
@@ -266,9 +266,9 @@ def main():
         cmap="twilight",
         extent=[lag_indices[0], lag_indices[-1], chain_distance_m[0], chain_distance_m[-1]],
     )
-    diag_axes[0].set_ylabel("Chain distance (m)")
-    diag_axes[0].set_title("Solved pairwise phase differences: arg g_p(i)")
-    diag_fig.colorbar(im0, ax=diag_axes[0], label="Phase (rad)")
+    diag_axes[0].set_ylabel("Координата цепочки (m)")
+    diag_axes[0].set_title("Решённые попарные фазовые разности: arg g_p(i)")
+    diag_fig.colorbar(im0, ax=diag_axes[0], label="Фаза (rad)")
     im1 = diag_axes[1].imshow(
         diagonal_amplitude,
         aspect="auto",
@@ -276,9 +276,9 @@ def main():
         cmap="viridis",
         extent=[lag_indices[0], lag_indices[-1], chain_distance_m[0], chain_distance_m[-1]],
     )
-    diag_axes[1].set_xlabel("Lag p")
-    diag_axes[1].set_ylabel("Chain distance (m)")
-    diag_axes[1].set_title("Solved pairwise phase differences: |g_p(i)|")
+    diag_axes[1].set_xlabel("Лаг p")
+    diag_axes[1].set_ylabel("Координата цепочки (m)")
+    diag_axes[1].set_title("Решённые попарные фазовые разности: |g_p(i)|")
     diag_fig.colorbar(im1, ax=diag_axes[1], label="|g_p(i)|")
     diag_png_path = output_dir / f"{dat_path.stem}_solved_pairwise_phase_differences.png"
     diag_fig.savefig(diag_png_path, dpi=200)
@@ -286,15 +286,15 @@ def main():
 
     phase_fig, phase_axes = plt.subplots(2, 1, figsize=(12, 8), constrained_layout=True)
     phase_axes[0].plot(chain_distance_m, phase_chain, color="#111111", linewidth=1.4)
-    phase_axes[0].set_xlabel("Chain distance (m)")
-    phase_axes[0].set_ylabel("Recovered phase (rad)")
-    phase_axes[0].set_title("Recovered phase chain up to global phase")
+    phase_axes[0].set_xlabel("Координата цепочки (m)")
+    phase_axes[0].set_ylabel("Восстановленная фаза (rad)")
+    phase_axes[0].set_title("Восстановленная фазовая цепочка с точностью до глобальной фазы")
     phase_axes[0].grid(alpha=0.25)
-    phase_axes[1].plot(lag_indices, solved["residual_rms"], linewidth=1.6, label="Linear solve residual RMS")
-    phase_axes[1].plot(lag_indices, consistency_rms, linewidth=1.6, label="Synchronization mismatch")
-    phase_axes[1].set_xlabel("Lag p")
-    phase_axes[1].set_ylabel("Error")
-    phase_axes[1].set_title("Fit consistency by lag")
+    phase_axes[1].plot(lag_indices, solved["residual_rms"], linewidth=1.6, label="RMS невязки линейного решения")
+    phase_axes[1].plot(lag_indices, consistency_rms, linewidth=1.6, label="Невязка синхронизации")
+    phase_axes[1].set_xlabel("Лаг p")
+    phase_axes[1].set_ylabel("Ошибка")
+    phase_axes[1].set_title("Согласованность fit-а по лагам")
     phase_axes[1].grid(alpha=0.25)
     phase_axes[1].legend()
     phase_png_path = output_dir / f"{dat_path.stem}_recovered_phase_chain.png"

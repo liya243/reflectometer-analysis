@@ -41,72 +41,72 @@ def save_png_figure(fig, png_path):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Render a reflectogram .dat file as a colormap."
+        description="Построить цветную карту рефлектограмм из .dat-файла."
     )
-    parser.add_argument("dat_path", help="Path to the .dat file")
+    parser.add_argument("dat_path", help="Путь к .dat-файлу")
     parser.add_argument(
         "--output-dir",
         default="analysis_outputs",
-        help="Directory for output image",
+        help="Каталог для выходного изображения",
     )
     parser.add_argument(
         "--trace-stride",
         type=int,
         default=1,
-        help="Keep every Nth reflectogram along the vertical axis",
+        help="Оставлять каждую N-ю рефлектограмму по вертикальной оси",
     )
     parser.add_argument(
         "--sample-stride",
         type=int,
         default=1,
-        help="Keep every Nth sample along the horizontal axis",
+        help="Оставлять каждый N-й отсчёт по горизонтальной оси",
     )
     parser.add_argument(
         "--lower-percentile",
         type=float,
         default=1.0,
-        help="Lower percentile for color clipping",
+        help="Нижний процентиль для ограничения цветовой шкалы",
     )
     parser.add_argument(
         "--upper-percentile",
         type=float,
         default=99.0,
-        help="Upper percentile for color clipping",
+        help="Верхний процентиль для ограничения цветовой шкалы",
     )
     parser.add_argument(
         "--scan-rate",
         type=float,
         default=None,
-        help="Optional override for reflectogram scan rate in Hz",
+        help="Необязательная частота записи рефлектограмм в Hz",
     )
     parser.add_argument(
         "--length-m",
         type=float,
         default=None,
-        help="Optional horizontal extent in meters; if omitted, use sampling_rate to infer distance axis",
+        help="Необязательный горизонтальный размер в метрах; если не задан, ось расстояний считается по sampling_rate",
     )
     parser.add_argument(
         "--ignore-first-meters",
         type=float,
         default=0.0,
-        help="Ignore this many meters from the beginning of each reflectogram",
+        help="Игнорировать столько метров от начала каждой рефлектограммы",
     )
     parser.add_argument(
         "--max-distance-m",
         type=float,
         default=None,
-        help="Optional maximum distance in meters to keep",
+        help="Необязательная максимальная координата в метрах",
     )
     parser.add_argument(
         "--subtract-time-mean",
         action="store_true",
-        help="Subtract the time-average trace before plotting to highlight modulation",
+        help="Вычесть среднюю по времени трассу перед построением, чтобы подчеркнуть модуляцию",
     )
     parser.add_argument(
         "--parity",
         choices=["all", "even", "odd"],
         default="all",
-        help="Use all reflectograms or only one parity subset",
+        help="Использовать все рефлектограммы или только одну чётность",
     )
     args = parser.parse_args()
 
@@ -159,7 +159,7 @@ def main():
         title += f" ({args.parity})"
     ax.set_title(title)
     ax.set_xlabel(x_label)
-    ax.set_ylabel("Time (s)")
+    ax.set_ylabel("Время (s)")
     cbar = fig.colorbar(im, ax=ax)
     cbar.set_label("Signal")
 

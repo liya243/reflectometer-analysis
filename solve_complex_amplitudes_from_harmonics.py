@@ -1,23 +1,25 @@
-"""Recover discrete complex reflector amplitudes from wavelength-sweep harmonics.
+"""Восстановление комплексных амплитуд дискретных отражателей по гармоникам свипа.
 
-This is the central deconvolution script in the project.  It uses one calibrated
-wavelength sweep to recover a complex discrete field
+Это центральный скрипт деконволюции в проекте. Он использует один калиброванный
+свип длины волны, чтобы восстановить комплексное дискретное поле
 
     E_i = A_i * exp(i phi_i)
 
-along the fiber.  The algorithm is:
+вдоль волокна. Алгоритм:
 
-1. Split alternating even/odd reflectograms because the pulse lengths differ.
-2. Detect or accept saw-sweep reset boundaries.
-3. Fit Fourier harmonics H_p(z) over one selected wavelength sweep.
-4. Use known even/odd pulse shapes to deconvolve H_p(z) into pair products
+1. Разделить чётные и нечётные рефлектограммы, потому что длины импульса различаются.
+2. Найти или принять заданные границы сброса пилообразного свипа.
+3. Аппроксимировать гармоники Фурье H_p(z) на выбранном свипе длины волны.
+4. Использовать известные формы чётного и нечётного импульсов, чтобы деконволюцией
+   перевести H_p(z) в попарные произведения
    X_i,p ~= E_i * conj(E_{i+p}).
-5. Factor those products as a rank-1 Hermitian matrix E E^H.
-6. Refine E by fitting the measured H_p(z) maps directly.
+5. Факторизовать эти произведения как эрмитову матрицу ранга 1: E E^H.
+6. Уточнить E прямым fit-ом к измеренным картам H_p(z).
 
-The recovered field is defined only up to a global phase.  The script fixes that
-gauge by rotating the first complex sample to be real and positive.  See
-docs/deconvolution_algorithm.md for the full derivation and limitations.
+Восстановленное поле определено только с точностью до глобальной фазы. Скрипт
+фиксирует эту калибровку, поворачивая первый комплексный отсчёт так, чтобы он
+был вещественным и положительным. Полный вывод и ограничения описаны в
+docs/deconvolution_algorithm.md.
 """
 
 import argparse
@@ -63,7 +65,7 @@ def regularize_reset_grid(reset_times_s, dominant_period_s, max_deviation_fracti
 def build_periodic_reset_grid(anchor_time_s, period_s, min_time_s, max_time_s):
     period_s = float(period_s)
     if not np.isfinite(period_s) or period_s <= 0.0:
-        raise ValueError("reset period override must be positive")
+        raise ValueError("Переопределённый период сбросов должен быть положительным")
 
     anchor_time_s = float(anchor_time_s)
     min_time_s = float(min_time_s)
@@ -80,19 +82,19 @@ def build_periodic_reset_grid(anchor_time_s, period_s, min_time_s, max_time_s):
 
 
 def build_observation_lists(solved_diagonals, amplitude_floor):
-    """Flatten solved pair-product diagonals into weighted graph observations.
+    """Преобразовать диагонали попарных произведений в взвешенные наблюдения графа.
 
-    After the linear harmonic deconvolution we know noisy estimates of
+    После линейной деконволюции гармоник есть шумные оценки
 
         X_i,p = E_i * conj(E_{i+p})
 
-    for multiple lags p.  It is convenient to treat every valid entry as an
-    edge in a graph: node i is connected to node j=i+p and the measured edge
-    value is the complex product.  Later reconstruction asks for the node
-    values E_i that best explain all these edges.
+    для нескольких лагов p. Удобно считать каждый валидный элемент ребром графа:
+    узел i соединён с узлом j=i+p, а измеренное значение ребра равно комплексному
+    произведению. Дальше восстановление ищет такие значения узлов E_i, которые
+    лучше всего объясняют все эти рёбра.
 
-    Very small |X_i,p| values have nearly random phase, so `amplitude_floor`
-    removes them before they can destabilize phase recovery.
+    Очень малые |X_i,p| имеют почти случайную фазу, поэтому `amplitude_floor`
+    отбрасывает их до того, как они дестабилизируют восстановление фаз.
     """
     obs_i = []
     obs_j = []
@@ -111,7 +113,7 @@ def build_observation_lists(solved_diagonals, amplitude_floor):
         obs_value.append(diag[idx])
         obs_weight.append(amplitude[idx])
     if len(obs_i) == 0:
-        raise ValueError("No diagonal entries survive amplitude_floor")
+        raise ValueError("После amplitude_floor не осталось ни одного элемента диагоналей")
     return {
         "i": np.concatenate(obs_i).astype(np.int64),
         "j": np.concatenate(obs_j).astype(np.int64),
@@ -122,18 +124,18 @@ def build_observation_lists(solved_diagonals, amplitude_floor):
 
 
 def solve_log_magnitudes(obs, chain_length, ridge_lambda, eps=1e-12):
-    """Estimate |E_i| from the magnitudes of pair products.
+    """Оценить |E_i| по модулям попарных произведений.
 
-    Because
+    Так как
 
         |E_i * conj(E_j)| = |E_i| * |E_j|,
 
-    the logarithm turns the magnitude problem into a linear system:
+    логарифм превращает задачу для амплитуд в линейную систему:
 
         log |X_ij| = log |E_i| + log |E_j|.
 
-    The extra final row is a weak anchor preventing an almost-singular graph
-    from drifting by a common scale in poorly connected regions.
+    Последняя дополнительная строка — слабая привязка, которая не даёт почти
+    сингулярному графу уплывать по общему масштабу в плохо связанных областях.
     """
     rows = obs["value"].size
     system = np.zeros((rows + 1, chain_length), dtype=np.float64)
@@ -143,7 +145,7 @@ def solve_log_magnitudes(obs, chain_length, ridge_lambda, eps=1e-12):
         system[row, i_idx] = row_weight
         system[row, j_idx] = row_weight
         rhs[row] = row_weight * np.log(max(abs(value), eps))
-    # Mild anchor to avoid global drift when the graph is nearly singular.
+    # Слабая привязка масштаба на случай, если граф наблюдений почти сингулярен.
     system[-1, 0] = np.sqrt(float(ridge_lambda) + eps)
     rhs[-1] = 0.0
     solution, *_ = np.linalg.lstsq(system, rhs, rcond=None)
@@ -151,15 +153,15 @@ def solve_log_magnitudes(obs, chain_length, ridge_lambda, eps=1e-12):
 
 
 def solve_recursive_phases(obs, chain_length):
-    """Build a rough phase seed from nearest-neighbor pair products.
+    """Построить грубое начальное приближение фаз по соседним произведениям.
 
-    If X_i,1 = E_i * conj(E_{i+1}), then
+    Если X_i,1 = E_i * conj(E_{i+1}), то
 
         arg(X_i,1) = phase(E_i) - phase(E_{i+1}).
 
-    This gives phase(E_{i+1}) recursively.  Missing nearest-neighbor products
-    are bridged by keeping the previous phase; the later ALS stages refine this
-    rough seed using all available lags.
+    Это даёт phase(E_{i+1}) рекурсивно. Если соседнее произведение отсутствует,
+    фаза просто продолжается предыдущим значением; последующие ALS-этапы уточняют
+    это грубое приближение по всем доступным лагам.
     """
     neighbor_products = {}
     for i_idx, j_idx, value in zip(obs["i"], obs["j"], obs["value"]):
@@ -175,19 +177,19 @@ def solve_recursive_phases(obs, chain_length):
 
 
 def alternating_rank1_hermitian(obs, chain_length, x0, n_iters):
-    """Factor noisy pair products into a rank-1 Hermitian field estimate.
+    """Факторизовать шумные попарные произведения в оценку поля ранга 1.
 
-    The ideal matrix of all pair products is
+    Идеальная матрица всех попарных произведений:
 
         X_ij = E_i * conj(E_j) = E E^H.
 
-    Only some diagonals of this matrix are measured, and they are noisy.  This
-    alternating least-squares loop updates one complex sample E_n at a time
-    while keeping all other samples fixed.  For fixed neighbors the weighted
-    least-squares update has a simple closed form.
+    Измерены только некоторые диагонали этой матрицы, причём с шумом. Этот цикл
+    попеременного МНК обновляет один комплексный отсчёт E_n за раз, удерживая
+    остальные отсчёты фиксированными. При фиксированных соседях взвешенное
+    МНК-обновление имеет простой замкнутый вид.
 
-    The result is used as a stable initialization for the later direct fit to
-    measured harmonics, not as the final answer.
+    Результат используется как стабильное начальное приближение для последующего
+    прямого fit-а к измеренным гармоникам, а не как окончательный ответ.
     """
     x = np.asarray(x0, dtype=np.complex128).copy()
     i_idx = obs["i"]
@@ -245,11 +247,11 @@ def canonicalize_global_phase(e_field):
 
 
 def predict_harmonics_from_field(weights, e_field, lag_indices, coord_count):
-    """Forward model: predict H_p(z) from a candidate discrete field E.
+    """Прямая модель: рассчитать H_p(z) из кандидатного дискретного поля E.
 
-    For each lag p and coordinate z_s, the harmonic is the valid convolution
-    of the pair-product diagonal E_i*conj(E_{i+p}) with the pulse-overlap
-    kernel weights[k] * weights[k+p].
+    Для каждого лага p и координаты z_s гармоника является valid-свёрткой
+    диагонали попарных произведений E_i*conj(E_{i+p}) с ядром перекрытия
+    импульса weights[k] * weights[k+p].
     """
     weights = np.asarray(weights, dtype=np.float64).reshape(-1)
     e_field = np.asarray(e_field, dtype=np.complex128).reshape(-1)
@@ -274,17 +276,17 @@ def fit_field_directly_to_harmonics(
     damping,
     ridge_lambda,
 ):
-    """Refine E by fitting the measured even/odd harmonic maps directly.
+    """Уточнить E прямым fit-ом к измеренным чётным/нечётным картам гармоник.
 
-    The two-stage reconstruction `H_p -> pair products -> E` can amplify noise,
-    especially for weak lags.  This function therefore returns to the original
-    measured quantities and minimizes the mismatch between measured H_p(z) and
-    the harmonics predicted by the current E.
+    Двухэтапное восстановление `H_p -> попарные произведения -> E` может
+    усиливать шум, особенно для слабых лагов. Поэтому эта функция возвращается
+    к исходно измеренным величинам и минимизирует расхождение между измеренными
+    H_p(z) и гармониками, рассчитанными из текущего E.
 
-    The update is coordinate-wise.  When all field samples except E_n are fixed,
-    every affected harmonic residual is linear in Re(E_n) and Im(E_n).  Each
-    update is therefore a small real least-squares solve with ridge
-    regularization, followed by damping to avoid large unstable jumps.
+    Обновление выполняется покоординатно. Если все отсчёты поля кроме E_n
+    зафиксированы, каждая затронутая невязка гармоники линейна по Re(E_n) и
+    Im(E_n). Поэтому каждое обновление — это маленькая вещественная МНК-задача
+    с ridge-регуляризацией и damping-ом против больших нестабильных скачков.
     """
     even_weights = np.asarray(even_weights, dtype=np.float64).reshape(-1)
     odd_weights = np.asarray(odd_weights, dtype=np.float64).reshape(-1)
@@ -299,9 +301,9 @@ def fit_field_directly_to_harmonics(
     odd_scale = 1.0 / np.maximum(np.sqrt(np.mean(np.abs(odd_harmonics) ** 2, axis=0)), 1e-8)
 
     def residual_vector(e_field):
-        # Normalize every lag before stacking residuals.  Without this, strong
-        # low-order harmonics dominate the cost and weak but informative lags
-        # have almost no influence on the fit.
+        # Нормируем каждый лаг перед объединением невязок. Иначе сильные
+        # низкие гармоники доминируют в функционале, а слабые, но информативные
+        # лаги почти не влияют на fit.
         e_field = canonicalize_global_phase(e_field)
         pred_even = predict_harmonics_from_field(even_weights, e_field, lag_indices, coord_count)
         pred_odd = predict_harmonics_from_field(odd_weights, e_field, lag_indices, coord_count)
@@ -336,10 +338,10 @@ def fit_field_directly_to_harmonics(
                 for col, p in enumerate(lag_indices):
                     kernel = weights[: pulse_count - p] * weights[p:]
                     m_count = kernel.size
-                    # H_p(z_s) contains terms E_{s+m}*conj(E_{s+m+p}).
-                    # E_n can appear either as the left member of a pair
-                    # (n=s+m) or as the right member (n=s+m+p).  The candidate
-                    # coordinates below are exactly those affected rows s.
+                    # H_p(z_s) содержит слагаемые E_{s+m}*conj(E_{s+m+p}).
+                    # E_n может быть левым членом пары (n=s+m) или правым
+                    # членом пары (n=s+m+p). Кандидатные координаты ниже — это
+                    # ровно те строки s, на которые влияет E_n.
                     s_left_lo = max(0, n - (m_count - 1))
                     s_left_hi = min(coord_count - 1, n)
                     s_right_lo = max(0, n - p - (m_count - 1))
@@ -368,11 +370,11 @@ def fit_field_directly_to_harmonics(
                         if alpha == 0.0 and beta == 0.0:
                             continue
 
-                        # Remove the old contribution of E_n from the current
-                        # prediction, then solve for the E_n that would best
-                        # explain the remaining target.  The complex expression
-                        # alpha*E_n + beta*conj(E_n) is linear in Re(E_n) and
-                        # Im(E_n), which gives the two real design columns below.
+                        # Убираем старый вклад E_n из текущего предсказания,
+                        # затем ищем такое E_n, которое лучше всего объясняет
+                        # оставшуюся цель. Комплексное выражение
+                        # alpha*E_n + beta*conj(E_n) линейно по Re(E_n) и
+                        # Im(E_n), что даёт два вещественных столбца ниже.
                         target = observed[s, col] - (predicted[s, col] - current_term)
                         y = target * scale[col]
                         c1 = (alpha + beta) * scale[col]
@@ -409,7 +411,7 @@ def fit_field_directly_to_harmonics(
     pred_odd = predict_harmonics_from_field(odd_weights, recovered_e, lag_indices, coord_count)
     return {
         "success": True,
-        "message": "ALS direct fit completed",
+        "message": "Прямой ALS-fit завершён",
         "n_iters": int(n_iters),
         "cost": float(np.mean(np.abs(residual_vector(recovered_e)) ** 2)),
         "field": recovered_e,
@@ -428,21 +430,21 @@ def save_matlab_bundle(output_dir, stem, suffix_tag, payload):
     script_text = f"""this_dir = fileparts(mfilename('fullpath'));
 data = load(fullfile(this_dir, '{mat_path.name}'));
 
-f1 = figure('Color', 'w', 'Name', 'Recovered complex amplitudes');
+f1 = figure('Color', 'w', 'Name', 'Восстановленные комплексные амплитуды');
 subplot(2,1,1);
 plot(data.chain_distance_m, data.E_amplitude, 'LineWidth', 1.4);
-grid on; xlabel('Distance (m)'); ylabel('|E|'); title('Recovered complex amplitude magnitude');
+grid on; xlabel('Расстояние (m)'); ylabel('|E|'); title('Модуль восстановленной комплексной амплитуды');
 subplot(2,1,2);
 plot(data.chain_distance_m, data.E_phase, 'LineWidth', 1.4);
-grid on; xlabel('Distance (m)'); ylabel('arg(E) (rad)'); title('Recovered complex amplitude phase');
+grid on; xlabel('Расстояние (m)'); ylabel('arg(E) (rad)'); title('Фаза восстановленной комплексной амплитуды');
 
-f2 = figure('Color', 'w', 'Name', 'Recovered pairwise products');
+f2 = figure('Color', 'w', 'Name', 'Восстановленные попарные произведения');
 subplot(2,1,1);
 imagesc(data.lag_indices, data.chain_distance_m, data.reconstructed_product_phase);
-axis xy; colorbar; xlabel('Lag p'); ylabel('Distance (m)'); title('arg(E_i conj(E_{{i+p}}))');
+axis xy; colorbar; xlabel('Лаг p'); ylabel('Расстояние (m)'); title('arg(E_i conj(E_{{i+p}}))');
 subplot(2,1,2);
 imagesc(data.lag_indices, data.chain_distance_m, data.reconstructed_product_amplitude);
-axis xy; colorbar; xlabel('Lag p'); ylabel('Distance (m)'); title('|E_i conj(E_{{i+p}})|');
+axis xy; colorbar; xlabel('Лаг p'); ylabel('Расстояние (m)'); title('|E_i conj(E_{{i+p}})|');
 """
     script_path.write_text(script_text, encoding="utf-8")
     return {"mat": mat_path, "script": script_path}
@@ -450,40 +452,40 @@ axis xy; colorbar; xlabel('Lag p'); ylabel('Distance (m)'); title('|E_i conj(E_{
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Recover a complex discrete field E_i from one sweep of H_p(z) via X = E E^H factorization."
+        description="Восстановить комплексное дискретное поле E_i по одному свипу H_p(z) через факторизацию X = E E^H."
     )
-    parser.add_argument("dat_path", help="Path to the .dat file")
-    parser.add_argument("--output-dir", default="analysis_outputs", help="Directory for output files")
-    parser.add_argument("--scan-rate", type=float, default=None, help="Optional override for reflectogram scan rate in Hz")
-    parser.add_argument("--fiber-z-min", type=float, default=105.0, help="Start of real fiber region in meters")
-    parser.add_argument("--fiber-z-max", type=float, default=280.0, help="End of real fiber region in meters")
-    parser.add_argument("--pulse-z-min", type=float, default=75.0, help="Start of pulse support in meters")
-    parser.add_argument("--pulse-z-max", type=float, default=85.0, help="End of pulse support in meters")
-    parser.add_argument("--zero-level-z", type=float, default=70.0, help="Zero level for pulse weights in meters")
-    parser.add_argument("--lambda0-nm", type=float, default=1550.0, help="Central wavelength in nm")
-    parser.add_argument("--sweep-span-pm", type=float, default=3.125, help="Wavelength span of one sweep in pm")
-    parser.add_argument("--rolling-window", type=int, default=64, help="Reset detector smoothing window in traces")
-    parser.add_argument("--min-period-s", type=float, default=0.05, help="Minimum sweep period for reset detection")
-    parser.add_argument("--max-period-s", type=float, default=None, help="Maximum sweep period for reset detection")
-    parser.add_argument("--prominence-sigma", type=float, default=2.0, help="Reset detector threshold in robust sigma units")
-    parser.add_argument("--refine-window-fraction", type=float, default=0.15, help="Local refinement window as fraction of detected period")
-    parser.add_argument("--reset-time-shift-ms", type=float, default=3.0, help="Shift detected sweep-end times later by this many milliseconds")
-    parser.add_argument("--reset-period-override-ms", type=float, default=None, help="Use this fixed reset period in milliseconds for sweep boundaries")
-    parser.add_argument("--reset-anchor-time-s", type=float, default=None, help="Anchor time for fixed reset grid; grid is extended backward and forward")
-    parser.add_argument("--shared-reset-detection", action="store_true", help="Use one common reset grid for even and odd traces")
-    parser.add_argument("--max-reset-time-s", type=float, default=None, help="Keep only detected reset times not later than this time")
-    parser.add_argument("--reset-detection-end-time-s", type=float, default=None, help="Use only traces up to this time when detecting reset grid")
-    parser.add_argument("--regularize-reset-grid", action="store_true", help="Project detected reset times onto a regular grid with the fitted period")
-    parser.add_argument("--baseline-tail-m", type=float, default=50.0, help="Subtract per-trace baseline estimated from the last this many meters")
-    parser.add_argument("--ridge-lambda", type=float, default=1e-6, help="Ridge regularization for diagonal least squares")
-    parser.add_argument("--amplitude-floor", type=float, default=1e-4, help="Ignore solved pair products below this floor")
-    parser.add_argument("--als-iters", type=int, default=20, help="Alternating minimization iterations for E recovery")
-    parser.add_argument("--sweep-index", type=int, default=0, help="Zero-based sweep index to use instead of averaging over sweeps")
-    parser.add_argument("--lag-min", type=int, default=1, help="Minimum lag p to use in the direct nonlinear fit")
-    parser.add_argument("--lag-max", type=int, default=None, help="Maximum lag p to use in the direct nonlinear fit")
-    parser.add_argument("--direct-iters", type=int, default=20, help="ALS iterations for direct fit to measured harmonics")
-    parser.add_argument("--direct-damping", type=float, default=0.25, help="Damping factor for direct ALS updates")
-    parser.add_argument("--direct-ridge-lambda", type=float, default=1e-3, help="Ridge regularization for each scalar ALS update")
+    parser.add_argument("dat_path", help="Путь к .dat-файлу")
+    parser.add_argument("--output-dir", default="analysis_outputs", help="Каталог для выходных файлов")
+    parser.add_argument("--scan-rate", type=float, default=None, help="Необязательная частота записи рефлектограмм в Hz")
+    parser.add_argument("--fiber-z-min", type=float, default=105.0, help="Начало полезного участка волокна в метрах")
+    parser.add_argument("--fiber-z-max", type=float, default=280.0, help="Конец полезного участка волокна в метрах")
+    parser.add_argument("--pulse-z-min", type=float, default=75.0, help="Начало поддержки импульса в метрах")
+    parser.add_argument("--pulse-z-max", type=float, default=85.0, help="Конец поддержки импульса в метрах")
+    parser.add_argument("--zero-level-z", type=float, default=70.0, help="Координата нулевого уровня для весов импульса")
+    parser.add_argument("--lambda0-nm", type=float, default=1550.0, help="Центральная длина волны в nm")
+    parser.add_argument("--sweep-span-pm", type=float, default=3.125, help="Размах одного свипа длины волны в pm")
+    parser.add_argument("--rolling-window", type=int, default=64, help="Окно сглаживания для детектора сбросов, в трассах")
+    parser.add_argument("--min-period-s", type=float, default=0.05, help="Минимальный период свипа для детектора сбросов")
+    parser.add_argument("--max-period-s", type=float, default=None, help="Максимальный период свипа для детектора сбросов")
+    parser.add_argument("--prominence-sigma", type=float, default=2.0, help="Порог детектора сбросов в робастных sigma")
+    parser.add_argument("--refine-window-fraction", type=float, default=0.15, help="Окно локального уточнения как доля найденного периода")
+    parser.add_argument("--reset-time-shift-ms", type=float, default=3.0, help="Сдвинуть найденные времена сбросов позже на это число ms")
+    parser.add_argument("--reset-period-override-ms", type=float, default=None, help="Использовать этот фиксированный период сбросов в ms")
+    parser.add_argument("--reset-anchor-time-s", type=float, default=None, help="Опорное время для фиксированной сетки сбросов")
+    parser.add_argument("--shared-reset-detection", action="store_true", help="Использовать общую сетку сбросов для чётных и нечётных трасс")
+    parser.add_argument("--max-reset-time-s", type=float, default=None, help="Оставить только сбросы не позже этого времени")
+    parser.add_argument("--reset-detection-end-time-s", type=float, default=None, help="Использовать только трассы до этого времени при поиске сбросов")
+    parser.add_argument("--regularize-reset-grid", action="store_true", help="Спроецировать найденные сбросы на регулярную сетку с найденным периодом")
+    parser.add_argument("--baseline-tail-m", type=float, default=50.0, help="Вычесть базовый уровень, оцененный по последним N метрам каждой трассы")
+    parser.add_argument("--ridge-lambda", type=float, default=1e-6, help="Ridge-регуляризация для линейной МНК-задачи по диагоналям")
+    parser.add_argument("--amplitude-floor", type=float, default=1e-4, help="Игнорировать решённые попарные произведения ниже этого порога")
+    parser.add_argument("--als-iters", type=int, default=20, help="Число итераций попеременной минимизации для восстановления E")
+    parser.add_argument("--sweep-index", type=int, default=0, help="Индекс свипа с нуля; отрицательный индекс отсчитывается с конца")
+    parser.add_argument("--lag-min", type=int, default=1, help="Минимальный лаг p для прямого нелинейного fit-а")
+    parser.add_argument("--lag-max", type=int, default=None, help="Максимальный лаг p для прямого нелинейного fit-а")
+    parser.add_argument("--direct-iters", type=int, default=20, help="Число ALS-итераций прямого fit-а к измеренным гармоникам")
+    parser.add_argument("--direct-damping", type=float, default=0.25, help="Коэффициент damping-а для прямых ALS-обновлений")
+    parser.add_argument("--direct-ridge-lambda", type=float, default=1e-3, help="Ridge-регуляризация для каждого скалярного ALS-обновления")
     args = parser.parse_args()
 
     dat_path = Path(args.dat_path)
@@ -504,7 +506,7 @@ def main():
 
     fiber_mask = (distance_axis_m >= float(args.fiber_z_min)) & (distance_axis_m <= float(args.fiber_z_max))
     if not np.any(fiber_mask):
-        raise ValueError("Fiber window is empty")
+        raise ValueError("Окно полезного волокна пустое")
     fiber_distance_m = distance_axis_m[fiber_mask]
 
     pulse_distance_m, even_weights, odd_weights, zero_level_actual_m, zero_index = mean_pulse_weights(
@@ -554,7 +556,7 @@ def main():
             override_period_s = 1e-3 * float(args.reset_period_override_ms)
             if args.reset_anchor_time_s is None:
                 if shared_reset_times_s.size == 0:
-                    raise ValueError("Cannot infer reset anchor from an empty reset list")
+                    raise ValueError("Нельзя определить опорный сброс по пустому списку сбросов")
                 anchor_time_s = float(shared_reset_times_s[0])
             else:
                 anchor_time_s = float(args.reset_anchor_time_s)
@@ -604,7 +606,7 @@ def main():
                 override_period_s = 1e-3 * float(args.reset_period_override_ms)
                 if args.reset_anchor_time_s is None:
                     if reset_times_s.size == 0:
-                        raise ValueError("Cannot infer reset anchor from an empty reset list")
+                        raise ValueError("Нельзя определить опорный сброс по пустому списку сбросов")
                     anchor_time_s = float(reset_times_s[0])
                 else:
                     anchor_time_s = float(args.reset_anchor_time_s)
@@ -628,7 +630,7 @@ def main():
         resolved_sweep_index = requested_sweep_index if requested_sweep_index >= 0 else harmonic_cube.shape[0] + requested_sweep_index
         if not (0 <= resolved_sweep_index < harmonic_cube.shape[0]):
             raise ValueError(
-                f"sweep_index {args.sweep_index} is out of range for parity '{parity}' with {harmonic_cube.shape[0]} complete sweeps"
+                f"sweep_index {args.sweep_index} вне диапазона для parity '{parity}', полных свипов: {harmonic_cube.shape[0]}"
             )
         selected_sweep_harmonics[parity] = harmonic_cube[resolved_sweep_index]
         dominant_periods[parity] = dominant_period_s
@@ -652,7 +654,7 @@ def main():
     lag_max = int(args.lag_max) if args.lag_max is not None else int(lag_indices[-1])
     lag_mask = (lag_indices >= int(args.lag_min)) & (lag_indices <= lag_max)
     if not np.any(lag_mask):
-        raise ValueError("Selected lag window is empty")
+        raise ValueError("Выбранное окно лагов пустое")
     fit_lag_indices = lag_indices[lag_mask]
     direct_fit = fit_field_directly_to_harmonics(
         even_weights=even_weights,
@@ -687,10 +689,10 @@ def main():
     fig1, axes1 = plt.subplots(2, 1, figsize=(12, 8), constrained_layout=True)
     axes1[0].plot(chain_distance_m, e_amplitude, color="#1F77B4", linewidth=1.5)
     axes1[0].set_ylabel("|E|")
-    axes1[0].set_title("Recovered complex discrete amplitudes")
+    axes1[0].set_title("Восстановленные комплексные амплитуды дискретов")
     axes1[0].grid(alpha=0.25)
     axes1[1].plot(chain_distance_m, e_phase, color="#111111", linewidth=1.4)
-    axes1[1].set_xlabel("Distance (m)")
+    axes1[1].set_xlabel("Расстояние (m)")
     axes1[1].set_ylabel("arg(E) (rad)")
     axes1[1].grid(alpha=0.25)
     e_png_path = output_dir / f"{dat_path.stem}_recovered_complex_amplitudes.png"
@@ -705,9 +707,9 @@ def main():
         cmap="twilight",
         extent=[lag_indices[0], lag_indices[-1], chain_distance_m[0], chain_distance_m[-1]],
     )
-    axes2[0].set_ylabel("Distance (m)")
-    axes2[0].set_title("Recovered pair products: arg(E_i conj(E_{i+p}))")
-    fig2.colorbar(im0, ax=axes2[0], label="Phase (rad)")
+    axes2[0].set_ylabel("Расстояние (m)")
+    axes2[0].set_title("Восстановленные попарные произведения: arg(E_i conj(E_{i+p}))")
+    fig2.colorbar(im0, ax=axes2[0], label="Фаза (rad)")
     im1 = axes2[1].imshow(
         reconstructed_product_amplitude,
         aspect="auto",
@@ -715,23 +717,23 @@ def main():
         cmap="viridis",
         extent=[lag_indices[0], lag_indices[-1], chain_distance_m[0], chain_distance_m[-1]],
     )
-    axes2[1].set_xlabel("Lag p")
-    axes2[1].set_ylabel("Distance (m)")
-    axes2[1].set_title("Recovered pair products: |E_i conj(E_{i+p})|")
-    fig2.colorbar(im1, ax=axes2[1], label="Amplitude")
+    axes2[1].set_xlabel("Лаг p")
+    axes2[1].set_ylabel("Расстояние (m)")
+    axes2[1].set_title("Восстановленные попарные произведения: |E_i conj(E_{i+p})|")
+    fig2.colorbar(im1, ax=axes2[1], label="Амплитуда")
     products_png_path = output_dir / f"{dat_path.stem}_recovered_pair_products.png"
     fig2.savefig(products_png_path, dpi=200)
     plt.close(fig2)
 
     fig3, ax3 = plt.subplots(figsize=(10, 4.5), constrained_layout=True)
-    ax3.plot(lag_indices, solved["residual_rms"], linewidth=1.5, label="Linear diagonal solve RMS")
-    ax3.plot(lag_indices, factorization_error, linewidth=1.5, label="Rank-1 factorization mismatch")
+    ax3.plot(lag_indices, solved["residual_rms"], linewidth=1.5, label="RMS линейного решения диагоналей")
+    ax3.plot(lag_indices, factorization_error, linewidth=1.5, label="Невязка rank-1 факторизации")
     ax3.axvspan(lag_indices[0], int(args.lag_min), color="#DDDDDD", alpha=0.35, linewidth=0)
     if lag_max < int(lag_indices[-1]):
         ax3.axvspan(lag_max, lag_indices[-1], color="#DDDDDD", alpha=0.35, linewidth=0)
-    ax3.set_xlabel("Lag p")
-    ax3.set_ylabel("Error")
-    ax3.set_title("Model mismatch by lag")
+    ax3.set_xlabel("Лаг p")
+    ax3.set_ylabel("Ошибка")
+    ax3.set_title("Невязка модели по лагам")
     ax3.grid(alpha=0.25)
     ax3.legend()
     error_png_path = output_dir / f"{dat_path.stem}_complex_amplitude_model_error_by_lag.png"

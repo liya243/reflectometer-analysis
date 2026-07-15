@@ -147,7 +147,7 @@ plot(data.odd_time_s, data.odd_phase_rad, '.', 'Color', [1.00 0.50 0.05], 'Marke
 grid on;
 xlabel('Time (s)');
 ylabel('Phase shift of best discrete (rad)');
-title(sprintf('Best discrete at %.3f m', data.best_distance_m));
+title(sprintf('Лучший дискрет в %.3f m', data.best_distance_m));
 legend('Merged raw', 'Merged rolling', 'Even', 'Odd', 'Location', 'best');
 
 f3 = figure('Color', 'w', 'Name', 'Fit quality');
@@ -165,24 +165,24 @@ title('Fit quality for the best discrete');
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Find which discrete near 175-180 m changes phase after 8.5 s and track that phase over time."
+        description="Найти, какой дискрет около 175-180 m меняет фазу после 8.5 s, и отследить эту фазу во времени."
     )
-    parser.add_argument("dat_path", help="Path to the .dat file")
-    parser.add_argument("--output-dir", default="analysis_outputs", help="Directory for outputs")
-    parser.add_argument("--model-mat", default=None, help="MAT file from solve_complex_amplitudes_from_harmonics.py")
-    parser.add_argument("--scan-rate", type=float, default=None, help="Optional scan rate override")
-    parser.add_argument("--fiber-z-min", type=float, default=110.0, help="Start of real fiber region in meters")
-    parser.add_argument("--fiber-z-max", type=float, default=350.0, help="End of real fiber region in meters")
-    parser.add_argument("--baseline-tail-m", type=float, default=50.0, help="Subtract per-trace baseline from the last this many meters")
-    parser.add_argument("--lambda0-nm", type=float, default=1550.0, help="Central wavelength in nm")
-    parser.add_argument("--wavelength-shift-pm", type=float, default=0.004, help="Apply this accepted post-sweep wavelength shift before piezo analysis")
-    parser.add_argument("--candidate-z-min", type=float, default=175.0, help="Search start for the moving discrete in meters")
-    parser.add_argument("--candidate-z-max", type=float, default=180.0, help="Search end for the moving discrete in meters")
-    parser.add_argument("--phase-start-time-s", type=float, default=8.5, help="Approximate time when the piezo phase actuation starts")
-    parser.add_argument("--baseline-duration-s", type=float, default=0.8, help="Quiet baseline interval length before phase-start-time-s")
-    parser.add_argument("--phase-grid-size", type=int, default=361, help="Number of phase hypotheses from -pi to pi")
-    parser.add_argument("--block-size", type=int, default=64, help="Average this many same-parity traces together before fitting")
-    parser.add_argument("--rolling-window", type=int, default=9, help="Rolling window for the final phase trend")
+    parser.add_argument("dat_path", help="Путь к .dat-файлу")
+    parser.add_argument("--output-dir", default="analysis_outputs", help="Каталог для выходных файлов")
+    parser.add_argument("--model-mat", default=None, help="MAT-файл из solve_complex_amplitudes_from_harmonics.py")
+    parser.add_argument("--scan-rate", type=float, default=None, help="Необязательная частота записи рефлектограмм")
+    parser.add_argument("--fiber-z-min", type=float, default=110.0, help="Начало полезного участка волокна в метрах")
+    parser.add_argument("--fiber-z-max", type=float, default=350.0, help="Конец полезного участка волокна в метрах")
+    parser.add_argument("--baseline-tail-m", type=float, default=50.0, help="Вычесть baseline каждой трассы по последним N метрам")
+    parser.add_argument("--lambda0-nm", type=float, default=1550.0, help="Центральная длина волны в nm")
+    parser.add_argument("--wavelength-shift-pm", type=float, default=0.004, help="Применить этот принятый post-sweep сдвиг длины волны перед анализом пьезо")
+    parser.add_argument("--candidate-z-min", type=float, default=175.0, help="Начало поиска движущегося дискрета в метрах")
+    parser.add_argument("--candidate-z-max", type=float, default=180.0, help="Конец поиска движущегося дискрета в метрах")
+    parser.add_argument("--phase-start-time-s", type=float, default=8.5, help="Примерное время начала фазового воздействия пьезо")
+    parser.add_argument("--baseline-duration-s", type=float, default=0.8, help="Длительность спокойного baseline-интервала перед phase-start-time-s")
+    parser.add_argument("--phase-grid-size", type=int, default=361, help="Число гипотез фазы от -pi до pi")
+    parser.add_argument("--block-size", type=int, default=64, help="Усреднить столько same-parity трасс перед fit-ом")
+    parser.add_argument("--rolling-window", type=int, default=9, help="Окно rolling average для итогового фазового тренда")
     args = parser.parse_args()
 
     dat_path = Path(args.dat_path)
@@ -293,22 +293,22 @@ def main():
     fig1, ax1 = plt.subplots(figsize=(10, 4.5), constrained_layout=True)
     ax1.plot(chain_distance_m[candidate_indices], candidate_scores, "o-", linewidth=1.4)
     ax1.axvline(best_distance_m, color="#D62728", linestyle="--", linewidth=1.0)
-    ax1.set_xlabel("Candidate distance (m)")
-    ax1.set_ylabel("Mean best correlation")
-    ax1.set_title("Which discrete best explains the post-8.5 s phase change")
+    ax1.set_xlabel("Координата кандидата (m)")
+    ax1.set_ylabel("Средняя лучшая корреляция")
+    ax1.set_title("Какой дискрет лучше всего объясняет изменение фазы после 8.5 s")
     ax1.grid(alpha=0.25)
     score_png_path = output_dir / f"{dat_path.stem}_{suffix}_candidate_score.png"
     fig1.savefig(score_png_path, dpi=200)
     plt.close(fig1)
 
     fig2, ax2 = plt.subplots(figsize=(12, 5), constrained_layout=True)
-    ax2.plot(merged_time_s, merged_phase_rad, ".", color="#A0A0A0", markersize=3.0, alpha=0.55, label="Merged raw")
+    ax2.plot(merged_time_s, merged_phase_rad, ".", color="#A0A0A0", markersize=3.0, alpha=0.55, label="Объединённые raw")
     ax2.plot(merged_time_s, merged_phase_rolling_rad, color="#111111", linewidth=1.6, label=f"Rolling ({args.rolling_window})")
-    ax2.plot(best_payload["even"]["time_s"], best_payload["even"]["phase_rad"], ".", color="#1F77B4", markersize=2.4, alpha=0.55, label="Even")
-    ax2.plot(best_payload["odd"]["time_s"], best_payload["odd"]["phase_rad"], ".", color="#FF7F0E", markersize=2.4, alpha=0.55, label="Odd")
-    ax2.set_xlabel("Time (s)")
-    ax2.set_ylabel("Phase shift of best discrete (rad)")
-    ax2.set_title(f"Phase of the moving discrete near {best_distance_m:.3f} m")
+    ax2.plot(best_payload["even"]["time_s"], best_payload["even"]["phase_rad"], ".", color="#1F77B4", markersize=2.4, alpha=0.55, label="Чётные")
+    ax2.plot(best_payload["odd"]["time_s"], best_payload["odd"]["phase_rad"], ".", color="#FF7F0E", markersize=2.4, alpha=0.55, label="Нечётные")
+    ax2.set_xlabel("Время (s)")
+    ax2.set_ylabel("Фазовый сдвиг лучшего дискрета (rad)")
+    ax2.set_title(f"Фаза движущегося дискрета около {best_distance_m:.3f} m")
     ax2.grid(alpha=0.25)
     ax2.legend(loc="best")
     phase_png_path = output_dir / f"{dat_path.stem}_{suffix}.png"
@@ -316,11 +316,11 @@ def main():
     plt.close(fig2)
 
     fig3, ax3 = plt.subplots(figsize=(12, 4.5), constrained_layout=True)
-    ax3.plot(merged_time_s, merged_fit_corr, ".", color="#4C78A8", markersize=3.0, alpha=0.55, label="Raw")
+    ax3.plot(merged_time_s, merged_fit_corr, ".", color="#4C78A8", markersize=3.0, alpha=0.55, label="Сырые точки")
     ax3.plot(merged_time_s, merged_fit_corr_rolling, color="#111111", linewidth=1.6, label=f"Rolling ({args.rolling_window})")
-    ax3.set_xlabel("Time (s)")
-    ax3.set_ylabel("Best correlation")
-    ax3.set_title("Fit quality for the best moving discrete")
+    ax3.set_xlabel("Время (s)")
+    ax3.set_ylabel("Лучшая корреляция")
+    ax3.set_title("Качество fit-а для лучшего движущегося дискрета")
     ax3.grid(alpha=0.25)
     ax3.legend(loc="best")
     fit_png_path = output_dir / f"{dat_path.stem}_{suffix}_fit_quality.png"

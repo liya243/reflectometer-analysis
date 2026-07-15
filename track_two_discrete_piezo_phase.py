@@ -21,7 +21,7 @@ def select_parity_subset(trace_matrix, parity):
     elif parity == "odd":
         mask = (global_indices % 2) == 1
     else:
-        raise ValueError(f"Unsupported parity: {parity}")
+        raise ValueError(f"Неподдерживаемая чётность трасс: {parity}")
     return data[mask], global_indices[mask]
 
 
@@ -54,7 +54,7 @@ def block_average_rows(data, time_s, block_size):
     data = np.asarray(data, dtype=np.float64)
     time_s = np.asarray(time_s, dtype=np.float64).reshape(-1)
     if data.shape[0] != time_s.size:
-        raise ValueError("Row/time size mismatch")
+        raise ValueError("Размеры строк данных и массива времени не совпадают")
     block_size = int(block_size)
     if block_size <= 1:
         return data.copy(), time_s.copy()
@@ -82,7 +82,7 @@ def model_trace_from_field(weights, e_field):
     pulse_count = weights.size
     coord_count = e_field.size - pulse_count + 1
     if coord_count <= 0:
-        raise ValueError("Field is shorter than pulse support")
+        raise ValueError("Поле короче поддержки импульса")
     trace = np.zeros(coord_count, dtype=np.float64)
     for p in range(1, pulse_count):
         kernel = weights[: pulse_count - p] * weights[p:]
@@ -207,45 +207,45 @@ def save_matlab_bundle(output_dir, stem, suffix_tag, payload):
     script_text = f"""this_dir = fileparts(mfilename('fullpath'));
 data = load(fullfile(this_dir, '{mat_path.name}'));
 
-figure('Color', 'w', 'Name', 'Candidate pair score');
+figure('Color', 'w', 'Name', 'Оценка кандидатных пар');
 plot(data.candidate_pair_center_m, data.candidate_score, 'o-', 'LineWidth', 1.4);
 hold on;
 xline(data.best_pair_center_m, 'r--', 'LineWidth', 1.0);
 grid on;
-xlabel('Pair center (m)');
-ylabel('Mean best correlation');
-title('Best two-discrete piezo candidate');
+xlabel('Центр пары (m)');
+ylabel('Средняя лучшая корреляция');
+title('Лучший кандидат: два дискрета под пьезой');
 
-figure('Color', 'w', 'Name', 'Piezo phase vs time');
+figure('Color', 'w', 'Name', 'Фаза пьезоэлемента во времени');
 plot(data.merged_time_s, data.merged_phase_rad, '.', 'Color', [0.72 0.72 0.72], 'MarkerSize', 7);
 hold on;
 plot(data.merged_time_s, data.merged_phase_rolling_rad, 'k', 'LineWidth', 1.6);
 plot(data.even_time_s, data.even_phase_aligned_rad, '.', 'Color', [0.12 0.47 0.71], 'MarkerSize', 6);
 plot(data.odd_time_s, data.odd_phase_aligned_rad, '.', 'Color', [1.00 0.50 0.05], 'MarkerSize', 6);
 grid on;
-xlabel('Time (s)');
-ylabel('Common phase shift of two discretes (rad)');
-title(sprintf('Best pair %.3f - %.3f m', data.best_pair_z1_m, data.best_pair_z2_m));
-legend('Merged raw', 'Merged rolling', 'Even', 'Odd', 'Location', 'best');
+xlabel('Время (s)');
+ylabel('Общий фазовый сдвиг двух дискретов (rad)');
+title(sprintf('Лучшая пара %.3f - %.3f m', data.best_pair_z1_m, data.best_pair_z2_m));
+legend('Объединённые raw', 'Объединённые rolling', 'Чётные', 'Нечётные', 'Location', 'best');
 
-figure('Color', 'w', 'Name', 'Raw parity phases before alignment');
+figure('Color', 'w', 'Name', 'Raw-фазы до выравнивания чётности');
 plot(data.even_time_s, data.even_phase_raw_rad, '.', 'Color', [0.12 0.47 0.71], 'MarkerSize', 6);
 hold on;
 plot(data.odd_time_s, data.odd_phase_raw_rad, '.', 'Color', [1.00 0.50 0.05], 'MarkerSize', 6);
 grid on;
-xlabel('Time (s)');
-ylabel('Raw phase (rad)');
-title(sprintf('Odd-even offset removed: %.3f rad', data.odd_even_phase_offset_rad));
-legend('Even raw', 'Odd raw', 'Location', 'best');
+xlabel('Время (s)');
+ylabel('Raw-фаза (rad)');
+title(sprintf('Удалённый offset odd-even: %.3f rad', data.odd_even_phase_offset_rad));
+legend('Чётные raw', 'Нечётные raw', 'Location', 'best');
 
-figure('Color', 'w', 'Name', 'Fit quality');
+figure('Color', 'w', 'Name', 'Качество fit-а');
 plot(data.merged_time_s, data.merged_fit_corr, '.', 'Color', [0.12 0.47 0.71], 'MarkerSize', 7);
 hold on;
 plot(data.merged_time_s, data.merged_fit_corr_rolling, 'k', 'LineWidth', 1.6);
 grid on;
-xlabel('Time (s)');
-ylabel('Best correlation');
-title('Two-discrete phase fit quality');
+xlabel('Время (s)');
+ylabel('Лучшая корреляция');
+title('Качество fit-а фазы двух дискретов');
 """
     script_path.write_text(script_text, encoding="utf-8")
     return mat_path, script_path
@@ -253,30 +253,30 @@ title('Two-discrete phase fit quality');
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Find two adjacent discretes driven by the piezo and recover their common phase shift over time."
+        description="Найти два соседних дискрета, управляемых пьезоэлементом, и восстановить их общий фазовый сдвиг во времени."
     )
-    parser.add_argument("dat_path", help="Path to the .dat file")
-    parser.add_argument("--output-dir", default="analysis_outputs", help="Directory for outputs")
-    parser.add_argument("--model-mat", default=None, help="MAT file from solve_complex_amplitudes_from_harmonics.py")
-    parser.add_argument("--drift-mat", default=None, help="MAT file from wavelength_drift_local_slope_after_sweep.py")
-    parser.add_argument("--scan-rate", type=float, default=None, help="Optional scan rate override")
-    parser.add_argument("--fiber-z-min", type=float, default=110.0, help="Start of real fiber region in meters")
-    parser.add_argument("--fiber-z-max", type=float, default=360.0, help="End of real fiber region in meters")
-    parser.add_argument("--baseline-tail-m", type=float, default=50.0, help="Subtract per-trace baseline from last this many meters")
-    parser.add_argument("--lambda0-nm", type=float, default=1550.0, help="Central wavelength in nm")
-    parser.add_argument("--drift-sign", type=float, default=1.0, help="Use -1 if the previously fitted drift sign must be inverted physically")
-    parser.add_argument("--candidate-z-min", type=float, default=230.0, help="Start of pair search window in meters")
-    parser.add_argument("--candidate-z-max", type=float, default=240.0, help="End of pair search window in meters")
-    parser.add_argument("--phase-start-time-s", type=float, default=5.5, help="Approximate time when the piezo signal starts")
-    parser.add_argument("--phase-end-time-s", type=float, default=None, help="Optional end time for phase tracking")
-    parser.add_argument("--baseline-duration-s", type=float, default=0.35, help="Quiet baseline interval before phase-start-time-s")
-    parser.add_argument("--phase-grid-size", type=int, default=361, help="Number of phase hypotheses from -pi to pi")
-    parser.add_argument("--block-size", type=int, default=32, help="Average this many same-parity traces together before fitting")
-    parser.add_argument("--fit-window-half-width-m", type=float, default=18.0, help="Local trace window half-width around candidate pair center")
-    parser.add_argument("--rolling-window", type=int, default=9, help="Rolling window over recovered phase")
-    parser.add_argument("--phase-continuity-lambda", type=float, default=0.08, help="Penalty weight for phase jumps between neighboring time blocks")
-    parser.add_argument("--phase-zero-prior-lambda", type=float, default=0.05, help="Penalty weight that keeps the first post-baseline phase near zero")
-    parser.add_argument("--parity-align-corr-floor", type=float, default=0.35, help="Use points above this correlation to align odd phase to even phase")
+    parser.add_argument("dat_path", help="Путь к .dat-файлу")
+    parser.add_argument("--output-dir", default="analysis_outputs", help="Каталог для выходных файлов")
+    parser.add_argument("--model-mat", default=None, help="MAT-файл из solve_complex_amplitudes_from_harmonics.py")
+    parser.add_argument("--drift-mat", default=None, help="MAT-файл из wavelength_drift_local_slope_after_sweep.py")
+    parser.add_argument("--scan-rate", type=float, default=None, help="Необязательная частота записи рефлектограмм")
+    parser.add_argument("--fiber-z-min", type=float, default=110.0, help="Начало полезного участка волокна в метрах")
+    parser.add_argument("--fiber-z-max", type=float, default=360.0, help="Конец полезного участка волокна в метрах")
+    parser.add_argument("--baseline-tail-m", type=float, default=50.0, help="Вычесть базовый уровень по последним N метрам")
+    parser.add_argument("--lambda0-nm", type=float, default=1550.0, help="Центральная длина волны в nm")
+    parser.add_argument("--drift-sign", type=float, default=1.0, help="Использовать -1, если физически нужно инвертировать знак ранее найденного дрейфа")
+    parser.add_argument("--candidate-z-min", type=float, default=230.0, help="Начало окна поиска пары в метрах")
+    parser.add_argument("--candidate-z-max", type=float, default=240.0, help="Конец окна поиска пары в метрах")
+    parser.add_argument("--phase-start-time-s", type=float, default=5.5, help="Примерное время начала пьезосигнала")
+    parser.add_argument("--phase-end-time-s", type=float, default=None, help="Необязательное время окончания отслеживания фазы")
+    parser.add_argument("--baseline-duration-s", type=float, default=0.35, help="Длительность спокойного baseline-интервала перед phase-start-time-s")
+    parser.add_argument("--phase-grid-size", type=int, default=361, help="Число гипотез фазы на интервале от -pi до pi")
+    parser.add_argument("--block-size", type=int, default=32, help="Усреднить столько same-parity трасс перед fit-ом")
+    parser.add_argument("--fit-window-half-width-m", type=float, default=18.0, help="Полуширина локального окна fit-а вокруг центра кандидатной пары")
+    parser.add_argument("--rolling-window", type=int, default=9, help="Окно rolling average по восстановленной фазе")
+    parser.add_argument("--phase-continuity-lambda", type=float, default=0.08, help="Вес штрафа за скачки фазы между соседними временными блоками")
+    parser.add_argument("--phase-zero-prior-lambda", type=float, default=0.05, help="Вес штрафа, удерживающего первую post-baseline фазу около нуля")
+    parser.add_argument("--parity-align-corr-floor", type=float, default=0.35, help="Использовать точки выше этой корреляции для выравнивания нечётной фазы к чётной")
     args = parser.parse_args()
 
     dat_path = Path(args.dat_path)
@@ -316,12 +316,12 @@ def main():
 
     fiber_mask = (distance_axis_m >= float(args.fiber_z_min)) & (distance_axis_m <= float(args.fiber_z_max))
     if not np.any(fiber_mask):
-        raise ValueError("Fiber window is empty")
+        raise ValueError("Окно полезного волокна пустое")
     fiber_data_full = data[:, fiber_mask]
     fiber_distance_m = distance_axis_m[fiber_mask]
     expected_width = e_base.size - even_weights.size + 1
     if fiber_data_full.shape[1] != expected_width:
-        raise ValueError(f"Fiber width {fiber_data_full.shape[1]} does not match model width {expected_width}")
+        raise ValueError(f"Ширина окна волокна {fiber_data_full.shape[1]} не совпадает с шириной модели {expected_width}")
 
     candidate_mask = (
         (chain_distance_m[:-1] >= float(args.candidate_z_min))
@@ -329,7 +329,7 @@ def main():
     )
     candidate_indices = np.flatnonzero(candidate_mask)
     if candidate_indices.size == 0:
-        raise ValueError("No adjacent candidate pairs inside requested window")
+        raise ValueError("В заданном окне нет соседних кандидатных пар")
 
     phase_grid_rad = np.linspace(-np.pi, np.pi, int(args.phase_grid_size), endpoint=False, dtype=np.float64)
     baseline_start_time_s = float(args.phase_start_time_s) - float(args.baseline_duration_s)
@@ -343,7 +343,7 @@ def main():
         if args.phase_end_time_s is not None:
             post_mask &= parity_time_s <= float(args.phase_end_time_s)
         if np.count_nonzero(baseline_mask) == 0 or np.count_nonzero(post_mask) == 0:
-            raise ValueError(f"Baseline or post window is empty for parity {parity}")
+            raise ValueError(f"Baseline-окно или post-окно пустое для parity {parity}")
 
         post_avg, post_time_avg_s = block_average_rows(parity_data[post_mask], parity_time_s[post_mask], args.block_size)
         baseline_avg, baseline_time_avg_s = block_average_rows(
@@ -400,7 +400,7 @@ def main():
         pair_center_m = 0.5 * (chain_distance_m[pair_start_index] + chain_distance_m[pair_start_index + 1])
         trace_mask = np.abs(fiber_distance_m - pair_center_m) <= float(args.fit_window_half_width_m)
         if np.count_nonzero(trace_mask) < 4:
-            raise ValueError("Local fit trace window is too small")
+            raise ValueError("Локальное окно трассы для fit-а слишком маленькое")
 
         payload = {}
         all_corr = []
@@ -470,22 +470,22 @@ def main():
     fig1, ax1 = plt.subplots(figsize=(10, 4.5), constrained_layout=True)
     ax1.plot(candidate_center_m, candidate_scores, "o-", linewidth=1.4)
     ax1.axvline(best_center, color="#D62728", linestyle="--", linewidth=1.0)
-    ax1.set_xlabel("Candidate pair center (m)")
-    ax1.set_ylabel("Mean best correlation")
-    ax1.set_title("Which adjacent two discretes best explain the piezo signal")
+    ax1.set_xlabel("Центр кандидатной пары (m)")
+    ax1.set_ylabel("Средняя лучшая корреляция")
+    ax1.set_title("Какие два соседних дискрета лучше всего объясняют пьезосигнал")
     ax1.grid(alpha=0.25)
     score_png_path = output_dir / f"{dat_path.stem}_{suffix}_candidate_score.png"
     fig1.savefig(score_png_path, dpi=200)
     plt.close(fig1)
 
     fig2, ax2 = plt.subplots(figsize=(12, 5), constrained_layout=True)
-    ax2.plot(merged_time_s, merged_phase_rad, ".", color="#A8A8A8", markersize=4.0, alpha=0.55, label="Merged raw")
+    ax2.plot(merged_time_s, merged_phase_rad, ".", color="#A8A8A8", markersize=4.0, alpha=0.55, label="Объединённые raw")
     ax2.plot(merged_time_s, merged_phase_rolling_rad, color="#111111", linewidth=1.6, label=f"Rolling ({args.rolling_window})")
-    ax2.plot(best_payload["even"]["time_s"], best_payload["even"]["phase_aligned_rad"], ".", color="#1F77B4", markersize=3.2, alpha=0.70, label="Even")
-    ax2.plot(best_payload["odd"]["time_s"], best_payload["odd"]["phase_aligned_rad"], ".", color="#FF7F0E", markersize=3.2, alpha=0.70, label="Odd")
-    ax2.set_xlabel("Time (s)")
-    ax2.set_ylabel("Common phase shift of two discretes (rad)")
-    ax2.set_title(f"Piezo phase for pair {best_z1:.3f} m and {best_z2:.3f} m")
+    ax2.plot(best_payload["even"]["time_s"], best_payload["even"]["phase_aligned_rad"], ".", color="#1F77B4", markersize=3.2, alpha=0.70, label="Чётные")
+    ax2.plot(best_payload["odd"]["time_s"], best_payload["odd"]["phase_aligned_rad"], ".", color="#FF7F0E", markersize=3.2, alpha=0.70, label="Нечётные")
+    ax2.set_xlabel("Время (s)")
+    ax2.set_ylabel("Общий фазовый сдвиг двух дискретов (rad)")
+    ax2.set_title(f"Фаза пьезоэлемента для пары {best_z1:.3f} m и {best_z2:.3f} m")
     ax2.grid(alpha=0.25)
     ax2.legend(loc="best")
     phase_png_path = output_dir / f"{dat_path.stem}_{suffix}.png"
@@ -493,11 +493,11 @@ def main():
     plt.close(fig2)
 
     fig3, ax3 = plt.subplots(figsize=(12, 4.5), constrained_layout=True)
-    ax3.plot(merged_time_s, merged_fit_corr, ".", color="#4C78A8", markersize=4.0, alpha=0.55, label="Raw")
+    ax3.plot(merged_time_s, merged_fit_corr, ".", color="#4C78A8", markersize=4.0, alpha=0.55, label="Сырые точки")
     ax3.plot(merged_time_s, merged_fit_corr_rolling, color="#111111", linewidth=1.6, label=f"Rolling ({args.rolling_window})")
-    ax3.set_xlabel("Time (s)")
-    ax3.set_ylabel("Best correlation")
-    ax3.set_title("Fit quality for the best two-discrete piezo pair")
+    ax3.set_xlabel("Время (s)")
+    ax3.set_ylabel("Лучшая корреляция")
+    ax3.set_title("Качество fit-а для лучшей двухдискретной пьезо-пары")
     ax3.grid(alpha=0.25)
     ax3.legend(loc="best")
     quality_png_path = output_dir / f"{dat_path.stem}_{suffix}_fit_quality.png"

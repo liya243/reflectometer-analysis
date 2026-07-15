@@ -34,8 +34,8 @@ def render_colormap(dat_path, data_view, distance_view_m, time_view_s, title, ou
         extent=[distance_view_m[0], distance_view_m[-1], time_view_s[0], time_view_s[-1]],
     )
     ax.set_title(title)
-    ax.set_xlabel("Distance (m)")
-    ax.set_ylabel("Time (s)")
+    ax.set_xlabel("Расстояние (m)")
+    ax.set_ylabel("Время (s)")
     cbar = fig.colorbar(im, ax=ax)
     cbar.set_label("Signal relative to zero level")
     fig.savefig(output_path, dpi=200)
@@ -46,42 +46,42 @@ def render_colormap(dat_path, data_view, distance_view_m, time_view_s, title, ou
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Render service-zone pulse colormaps separately for even and odd reflectograms."
+        description="Построить цветные карты импульсов в сервисной зоне отдельно для чётных и нечётных рефлектограмм."
     )
-    parser.add_argument("dat_path", help="Path to the .dat file")
+    parser.add_argument("dat_path", help="Путь к .dat-файлу")
     parser.add_argument(
         "--output-dir",
         default="analysis_outputs",
-        help="Directory for output images",
+        help="Каталог для выходных изображений",
     )
     parser.add_argument(
         "--scan-rate",
         type=float,
         default=None,
-        help="Optional override for reflectogram scan rate in Hz",
+        help="Необязательная частота записи рефлектограмм в Hz",
     )
     parser.add_argument(
         "--distance-min-m",
         type=float,
         default=70.0,
-        help="Start of the service-zone pulse window in meters",
+        help="Начало окна импульса в сервисной зоне, в метрах",
     )
     parser.add_argument(
         "--distance-max-m",
         type=float,
         default=90.0,
-        help="End of the service-zone pulse window in meters",
+        help="Конец окна импульса в сервисной зоне, в метрах",
     )
     parser.add_argument(
         "--zero-level-m",
         type=float,
         default=70.0,
-        help="Distance in meters used as zero level for each reflectogram",
+        help="Координата в метрах, используемая как нулевой уровень каждой рефлектограммы",
     )
     parser.add_argument(
         "--subtract-time-mean",
         action="store_true",
-        help="Subtract the time-average pulse trace within each parity after zero-level correction",
+        help="После коррекции нулевого уровня вычесть среднюю по времени импульсную трассу внутри каждой чётности",
     )
     args = parser.parse_args()
 

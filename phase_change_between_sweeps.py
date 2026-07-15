@@ -36,10 +36,10 @@ title('arg(E_{{n+1}}) - arg(E_n) wrapped to [-pi, pi]');
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Plot sweep-to-sweep phase changes from the recovered complex amplitude batch output."
+        description="Построить изменения фазы от свипа к свипу по результатам пакетного восстановления комплексных амплитуд."
     )
-    parser.add_argument("mat_path", help="Path to *_complex_amplitudes_over_sweeps_matlab_data.mat")
-    parser.add_argument("--output-dir", default=None, help="Directory for output files; default is MAT file directory")
+    parser.add_argument("mat_path", help="Путь к *_complex_amplitudes_over_sweeps_matlab_data.mat")
+    parser.add_argument("--output-dir", default=None, help="Каталог для выходных файлов; по умолчанию каталог MAT-файла")
     args = parser.parse_args()
 
     mat_path = Path(args.mat_path)
@@ -67,9 +67,9 @@ def main():
         vmax=np.pi,
         extent=[chain_distance_m[0], chain_distance_m[-1], sweep_pair_index[0], sweep_pair_index[-1]],
     )
-    ax.set_xlabel("Distance (m)")
-    ax.set_ylabel("Sweep pair index")
-    ax.set_title("Wrapped phase change between neighboring sweeps")
+    ax.set_xlabel("Расстояние (m)")
+    ax.set_ylabel("Индекс пары свипов")
+    ax.set_title("Wrapped-изменение фазы между соседними свипами")
     fig.colorbar(im, ax=ax, label="Delta phase (rad)")
 
     stem = mat_path.name.replace("_complex_amplitudes_over_sweeps_matlab_data.mat", "")

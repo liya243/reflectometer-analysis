@@ -1,247 +1,254 @@
-# Deconvolution of Reflectometer Sweep Harmonics into Discrete Complex Fields
+# Деконволюция гармоник свипа в комплексные поля дискретов
 
-This document explains the main inverse problem implemented in
+Этот документ описывает основную обратную задачу, реализованную в
 `solve_complex_amplitudes_from_harmonics.py`.
 
-## Measurement Model
+## Модель измерения
 
-For one reflectogram coordinate `z`, the detected photodiode signal is a coherent sum of delayed
-copies of the launched pulse. The service zone gives the pulse envelope sampled on the same distance
-grid. Let:
+Для одной координаты рефлектограммы `z` сигнал фотодиода является когерентной суммой задержанных
+копий запущенного импульса. Сервисная зона даёт огибающую импульса, измеренную на той же сетке
+расстояний. Обозначим:
 
-- `E_i = A_i exp(i phi_i)` be the complex field contribution from discrete reflector `i`;
-- `w_k` be the real pulse amplitude at discrete pulse sample `k`;
-- `D` be one distance-grid step;
-- `p` be a lag in discrete samples;
-- `lambda` be laser wavelength;
+- `E_i = A_i exp(i phi_i)` — комплексный вклад дискретного отражателя `i`;
+- `w_k` — вещественная амплитуда импульса в дискретном отсчёте `k`;
+- `D` — шаг сетки по расстоянию;
+- `p` — лаг в дискретных отсчётах;
+- `lambda` — длина волны лазера;
 - `beta(lambda) = 2*pi*n_eff/lambda`.
 
-When two pulse samples separated by `p` overlap at coordinate `z`, the interference term contains
+Если две точки импульса, разделённые лагом `p`, перекрываются в координате `z`, интерференционный
+член содержит
 
 ```text
 E_i * conj(E_{i+p}) * exp(2 i beta(lambda) p D)
 ```
 
-up to the known pulse weights. Therefore each lag `p` oscillates with a wavelength-dependent
-frequency proportional to `pD`.
+с точностью до известных весов импульса. Поэтому каждый лаг `p` осциллирует при изменении длины
+волны с частотой, пропорциональной `pD`.
 
-## Extracting Harmonics `H_p(z)`
+## Извлечение гармоник `H_p(z)`
 
-During one saw-like wavelength sweep, `lambda` moves across a known span, e.g. `3.125 pm`.
-For each coordinate `z`, the script fits the trace over that sweep to sinusoidal basis functions:
+Во время одного пилообразного свипа длина волны проходит известный интервал, например `3.125 pm`.
+Для каждой координаты `z` скрипт аппроксимирует сигнал на этом свипе синусоидальным базисом:
 
 ```text
 cos(2 * delta_beta * pD), sin(2 * delta_beta * pD)
 ```
 
-for all relevant lags `p`.
+для всех используемых лагов `p`.
 
-The fitted complex coefficient is called `H_p(z)`. Physically it is the weighted sum of all reflector
-pairs separated by `p` that can contribute to coordinate `z`:
+Полученный комплексный коэффициент называется `H_p(z)`. Физически это взвешенная сумма всех пар
+отражателей, разделённых лагом `p`, которые могут дать вклад в координату `z`:
 
 ```text
 H_p(z_s) = sum_k w_k * w_{k+p} * E_{s+k} * conj(E_{s+k+p})
 ```
 
-Here `s` indexes the observed coordinate and `k` indexes the pulse support. This is a convolution:
-for every lag `p`, the unknown pair-product diagonal
+Здесь `s` — индекс наблюдаемой координаты, а `k` — индекс внутри поддержки импульса. Это свёртка:
+для каждого лага `p` неизвестная диагональ попарных произведений
 
 ```text
 X_i,p = E_i * conj(E_{i+p})
 ```
 
-is blurred by a known kernel
+размыта известным ядром
 
 ```text
 K_p,k = w_k * w_{k+p}
 ```
 
-so that
+то есть
 
 ```text
 H_p = K_p (*) X_p
 ```
 
-where `(*)` denotes a 1D valid convolution along the fiber coordinate.
+где `(*)` означает одномерную valid-свёртку вдоль координаты волокна.
 
-## Step 1: Solve Pair-Product Diagonals
+## Шаг 1. Решение диагоналей попарных произведений
 
-`solve_pairwise_phase_differences.py` solves the linear deconvolution problem separately for every
-lag `p`.
+`solve_pairwise_phase_differences.py` решает линейную задачу деконволюции отдельно для каждого лага
+`p`.
 
-Because the experiment alternates two pulse lengths, there are two measured harmonic sets:
+Так как в эксперименте чередуются две длины импульса, есть два набора измеренных гармоник:
 
 ```text
 H_p_even(z)
 H_p_odd(z)
 ```
 
-and two known pulse kernels:
+и два известных импульсных ядра:
 
 ```text
 K_p_even
 K_p_odd
 ```
 
-The same unknown pair-product diagonal `X_p` must explain both. The linear least-squares system is:
+Одна и та же неизвестная диагональ `X_p` должна объяснять оба измерения. Линейная МНК-задача имеет
+вид:
 
 ```text
 K_p_even (*) X_p ~= H_p_even
 K_p_odd  (*) X_p ~= H_p_odd
 ```
 
-The solver uses ridge regularization because some lags have weak kernels or poor signal-to-noise:
+Используется ridge-регуляризация, потому что для некоторых лагов ядро слабое или отношение
+сигнал/шум низкое:
 
 ```text
 min_X ||A X - b||^2 + ridge_lambda * ||X||^2
 ```
 
-The result is a set of complex diagonals:
+Результат — набор комплексных диагоналей:
 
 ```text
 X_i,p ~= E_i * conj(E_{i+p})
 ```
 
-These are not yet the field `E_i`; they are pairwise products.
+Это ещё не само поле `E_i`, а только попарные произведения.
 
-## Step 2: Interpret the Diagonals as a Rank-1 Hermitian Matrix
+## Шаг 2. Интерпретация диагоналей как rank-1 эрмитовой матрицы
 
-If all pair products were known perfectly, they would form entries of a Hermitian rank-1 matrix:
+Если бы все попарные произведения были известны точно, они образовали бы элементы эрмитовой матрицы
+ранга 1:
 
 ```text
 X_ij = E_i * conj(E_j)
 ```
 
-The matrix has one unavoidable ambiguity:
+У такой матрицы есть неизбежная неоднозначность:
 
 ```text
 E_i -> E_i * exp(i theta_global)
 ```
 
-does not change any product `E_i * conj(E_j)`. The scripts fix this by making the first recovered
-sample real and positive.
+Она не меняет ни одно произведение `E_i * conj(E_j)`. Скрипты фиксируют эту глобальную фазу, делая
+первый восстановленный отсчёт вещественным и положительным.
 
-In practice we only know a band of this matrix, because only finite lags are measurable and reliable.
-The reconstruction is therefore approximate.
+На практике известна только полоса этой матрицы, потому что измеримы и надёжны лишь конечные лаги.
+Поэтому восстановление является приближённым.
 
-## Step 3: Initial Field Estimate
+## Шаг 3. Начальная оценка поля
 
-`solve_complex_amplitudes_from_harmonics.py` builds an observation list:
+`solve_complex_amplitudes_from_harmonics.py` строит список наблюдений:
 
 ```text
 i, j=i+p, measured_value = X_i,p
 ```
 
-Weak pair products are dropped using `--amplitude-floor`, because their phase is mostly noise.
+Слабые попарные произведения отбрасываются параметром `--amplitude-floor`, потому что их фаза в
+основном шумовая.
 
-The initial magnitude estimate uses:
+Начальная оценка амплитуд использует равенство:
 
 ```text
 log |X_i,p| = log |E_i| + log |E_{i+p}|
 ```
 
-which is a linear least-squares problem for `log |E_i|`.
+Это линейная МНК-задача для `log |E_i|`.
 
-The initial phase estimate uses nearest-neighbor products when available:
+Начальная оценка фаз использует ближайшие соседние произведения, если они доступны:
 
 ```text
 arg(E_i * conj(E_{i+1})) = phi_i - phi_{i+1}
 ```
 
-so
+поэтому
 
 ```text
 phi_{i+1} = phi_i - arg(X_i,1)
 ```
 
-This gives only a rough seed.
+Так получается только грубое начальное приближение.
 
-## Step 4: Alternating Rank-1 Factorization
+## Шаг 4. Попеременная rank-1 факторизация
 
-The script then improves the field by alternating minimization of:
+Затем скрипт улучшает поле, минимизируя:
 
 ```text
 sum_observations weight_ij * |E_i * conj(E_j) - X_ij|^2
 ```
 
-When all other `E_j` are fixed, the best update for one `E_i` has a closed form. This is implemented
-by `alternating_rank1_hermitian`. It is not a full global optimizer, but it is stable enough to produce
-a useful seed for the next stage.
+Если все остальные `E_j` зафиксированы, оптимальное обновление одного `E_i` имеет замкнутый вид.
+Это реализовано в `alternating_rank1_hermitian`. Этот этап не является полноценной глобальной
+оптимизацией, но даёт стабильное начальное приближение для следующего шага.
 
-## Step 5: Direct Fit Back to Measured Harmonics
+## Шаг 5. Прямой fit обратно к измеренным гармоникам
 
-The pair-product deconvolution step can amplify noise. Therefore the final stage fits `E_i` directly
-against the measured harmonics again:
+Линейная деконволюция попарных произведений может усиливать шум. Поэтому финальный этап снова
+сравнивает `E_i` непосредственно с исходно измеренными гармониками:
 
 ```text
 predicted_H_p(z_s; E) =
     sum_k w_k * w_{k+p} * E_{s+k} * conj(E_{s+k+p})
 ```
 
-for even and odd pulses simultaneously.
+для чётного и нечётного импульсов одновременно.
 
-The direct fit minimizes normalized residuals between measured and predicted harmonic maps. It updates
-one complex `E_i` at a time. For a single updated sample, the residual is linear in:
+Прямой fit минимизирует нормированные невязки между измеренными и рассчитанными картами гармоник.
+Он обновляет один комплексный отсчёт `E_i` за раз. Для одного обновляемого отсчёта невязка линейна по:
 
 ```text
 Re(E_i), Im(E_i)
 ```
 
-so every scalar update is a small real least-squares problem with ridge regularization:
+поэтому каждое скалярное обновление — это небольшая вещественная МНК-задача с ridge-регуляризацией:
 
 ```text
 min ||A [Re(E_i), Im(E_i)] - b||^2 + direct_ridge_lambda * ||...||^2
 ```
 
-`--direct-damping` mixes the update with the previous value to avoid unstable jumps:
+`--direct-damping` смешивает новое значение со старым, чтобы избежать нестабильных скачков:
 
 ```text
 E_i <- (1 - damping) * E_i_old + damping * E_i_new
 ```
 
-After every iteration the global phase is canonicalized again.
+После каждой итерации глобальная фаза снова приводится к каноническому виду.
 
-## Why Lag Selection Matters
+## Почему важен выбор лагов
 
-Very small lags can be contaminated by baseline terms, pulse autocorrelation leakage, and imperfect
-subtraction of the photodiode DC level. Very large lags have small pulse-kernel overlap:
+Слишком маленькие лаги могут быть загрязнены базовым уровнем, утечкой автокорреляции импульса и
+неидеальным вычитанием постоянной составляющей фотодиода. Слишком большие лаги имеют слабое
+перекрытие импульса:
 
 ```text
 K_p,k = w_k * w_{k+p}
 ```
 
-so they are weak and noisy. In practice `--lag-min` and `--lag-max` are physical filters:
+поэтому они плохо восстанавливаются и шумят. На практике `--lag-min` и `--lag-max` являются
+физическими фильтрами:
 
-- `lag-min` removes terms dominated by low-frequency/baseline artifacts;
-- `lag-max` removes terms whose pulse overlap is too weak to recover reliably.
+- `lag-min` отбрасывает члены, где заметны низкочастотные артефакты и базовый уровень;
+- `lag-max` отбрасывает члены, где перекрытие импульса слишком слабое.
 
-For the current dataset, a range like `--lag-min 2 --lag-max 16` was used as a pragmatic compromise.
+Для текущего датасета использовался диапазон `--lag-min 2 --lag-max 16` как практический компромисс.
 
-## Why Post-Sweep Drift Is Hard to Recover from `H_p`
+## Почему дрейф после свипа трудно восстановить из `H_p`
 
-`H_p(z)` is calibrated during a known wavelength sweep. After modulation stops, each time point is a
-single real-valued trace. Fitting that single trace against a complex harmonic model has several
-degeneracies:
+`H_p(z)` калибруется во время известного свипа длины волны. После выключения модуляции каждый момент
+времени даёт одну вещественную трассу. Fit такой одиночной трассы комплексной гармонической моделью
+имеет несколько неоднозначностей:
 
-- phase is periodic modulo `2*pi`;
-- multiple wavelength shifts can look similar if the trace is noisy;
-- local piezo phase changes can mimic or obscure wavelength drift;
-- outside the last sweep span, the model extrapolates rather than interpolates.
+- фаза периодична по модулю `2*pi`;
+- разные сдвиги длины волны могут выглядеть похоже при наличии шума;
+- локальное изменение фазы пьезоэлементом может маскировать или имитировать дрейф длины волны;
+- за пределами диапазона последнего свипа модель экстраполирует, а не интерполирует.
 
-Therefore `H_p(z)` is excellent for reconstructing `E_i` from a sweep, but not by itself a reliable
-absolute wavelength meter after the sweep is switched off.
+Поэтому `H_p(z)` хорошо подходит для восстановления `E_i` из свипа, но сам по себе не является
+надёжным абсолютным измерителем длины волны после выключения свипа.
 
-## Main Quality Diagnostics
+## Основные диагностические величины
 
-The deconvolution script saves:
+Скрипт деконволюции сохраняет:
 
-- recovered `|E_i|` and unwrapped `arg(E_i)`;
-- reconstructed pair-product amplitude and phase maps;
-- model error by lag;
-- MATLAB `.mat` data and opener scripts for interactive inspection.
+- восстановленные `|E_i|` и развёрнутую фазу `arg(E_i)`;
+- карты амплитуды и фазы восстановленных попарных произведений;
+- ошибку модели по лагам;
+- MATLAB `.mat`-файлы и opener-скрипты для интерактивного просмотра.
 
-Important printed metrics:
+Важные печатаемые метрики:
 
-- `linear_residual_rms_mean`: quality of the linear `H_p -> X_p` deconvolution;
-- `factorization_error_mean`: mismatch between solved pair products and `E_i conj(E_j)`;
-- `direct_fit_residual_rms`: final mismatch between measured and modelled harmonics.
+- `linear_residual_rms_mean` — качество линейной деконволюции `H_p -> X_p`;
+- `factorization_error_mean` — расхождение между решёнными попарными произведениями и `E_i conj(E_j)`;
+- `direct_fit_residual_rms` — финальная невязка между измеренными и рассчитанными гармониками.

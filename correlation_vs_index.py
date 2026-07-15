@@ -158,8 +158,8 @@ plot(data.time_s, data.correlation_rolling, 'k', 'LineWidth', 1.6);
 grid on;
 xlabel('Time (s)');
 ylabel('Correlation');
-title(sprintf('Correlation vs time, reference reflectogram %d', data.reference_index));
-legend(sprintf('Correlation'), sprintf('Rolling mean (%d)', data.rolling_window), 'Location', 'best');
+title(sprintf('Корреляция во времени, референсная рефлектограмма %d', data.reference_index));
+legend(sprintf('Корреляция'), sprintf('Скользящее среднее (%d)', data.rolling_window), 'Location', 'best');
 
 f2 = figure('Color', 'w', 'Name', 'Absolute wavelength shift vs time');
 plot(data.time_s, data.abs_delta_lambda_pm, 'Color', [1.00 0.82 0.62], 'LineWidth', 0.5);
@@ -168,8 +168,8 @@ plot(data.time_s, data.abs_delta_lambda_rolling, 'k', 'LineWidth', 1.6);
 grid on;
 xlabel('Time (s)');
 ylabel('|\\Delta\\lambda| (pm)');
-title(sprintf('Absolute wavelength shift vs time, reference reflectogram %d', data.reference_index));
-legend(sprintf('|\\Delta\\lambda|'), sprintf('Rolling mean (%d)', data.rolling_window), 'Location', 'best');
+title(sprintf('Абсолютный сдвиг длины волны во времени, референсная рефлектограмма %d', data.reference_index));
+legend(sprintf('|\\Delta\\lambda|'), sprintf('Скользящее среднее (%d)', data.rolling_window), 'Location', 'best');
 
 % Optional: save native MATLAB figure files after opening them.
 % savefig(f1, fullfile(this_dir, '{stem}_corr_vs_{ref_tag}.fig'));
@@ -208,9 +208,9 @@ def make_plot(path, time_axis_s, correlation, rolling_window, reference_index):
 
     ax.plot(time_axis_s, correlation, color="#4C78A8", linewidth=0.35, alpha=0.45)
     ax.plot(time_axis_s, rolling, color="#111111", linewidth=1.6, label=f"Rolling mean ({rolling_window})")
-    ax.set_xlabel("Time (s)")
-    ax.set_ylabel("Correlation")
-    ax.set_title(f"Correlation vs time, reference reflectogram {reference_index}")
+    ax.set_xlabel("Время (s)")
+    ax.set_ylabel("Корреляция")
+    ax.set_title(f"Корреляция во времени, референсная рефлектограмма {reference_index}")
     ax.grid(alpha=0.25)
     ax.legend()
 
@@ -226,9 +226,9 @@ def make_abs_delta_lambda_plot(path, time_axis_s, abs_delta_lambda_pm, rolling_w
 
     ax.plot(time_axis_s, abs_delta_lambda_pm, color="#F28E2B", linewidth=0.35, alpha=0.45)
     ax.plot(time_axis_s, rolling, color="#111111", linewidth=1.6, label=f"Rolling mean ({rolling_window})")
-    ax.set_xlabel("Time (s)")
+    ax.set_xlabel("Время (s)")
     ax.set_ylabel(r"|$\Delta \lambda$| (pm)")
-    ax.set_title(f"Absolute wavelength shift vs time, reference reflectogram {reference_index}")
+    ax.set_title(f"Абсолютный сдвиг длины волны во времени, референсная рефлектограмма {reference_index}")
     ax.grid(alpha=0.25)
     ax.legend()
 
@@ -239,49 +239,49 @@ def make_abs_delta_lambda_plot(path, time_axis_s, abs_delta_lambda_pm, rolling_w
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Compute correlation of all reflectograms with a chosen reference reflectogram."
+        description="Рассчитать корреляцию всех рефлектограмм с выбранной референсной рефлектограммой."
     )
-    parser.add_argument("dat_path", help="Path to the .dat file")
+    parser.add_argument("dat_path", help="Путь к .dat-файлу")
     parser.add_argument(
         "--output-dir",
         default="analysis_outputs",
-        help="Directory for CSV and PNG outputs",
+        help="Каталог для CSV и PNG результатов",
     )
     parser.add_argument(
         "--rolling-window",
         type=int,
         default=64,
-        help="Window for rolling-mean trend lines",
+        help="Окно для rolling-mean трендов",
     )
     parser.add_argument(
         "--scan-rate",
         type=float,
         default=None,
-        help="Optional override for reflectogram scan rate in Hz; default is to use the value stored in the file header",
+        help="Необязательная частота записи рефлектограмм в Hz; по умолчанию берётся значение из заголовка файла",
     )
     parser.add_argument(
         "--reference-index",
         type=int,
         default=0,
-        help="Zero-based reflectogram index used as the reference trace",
+        help="Индекс референсной трассы с нуля",
     )
     parser.add_argument(
         "--corr-to-dlambda-coeff",
         type=float,
         default=2.77e2,
-        help="Coefficient in corr = 1 - coeff * (Delta_lambda_pm)^2",
+        help="Коэффициент в формуле corr = 1 - coeff * (Delta_lambda_pm)^2",
     )
     parser.add_argument(
         "--ignore-first-meters",
         type=float,
         default=0.0,
-        help="Ignore this many meters from the beginning of each reflectogram before correlation",
+        help="Игнорировать столько метров от начала каждой рефлектограммы перед расчётом корреляции",
     )
     parser.add_argument(
         "--parity",
         choices=["all", "even", "odd"],
         default="all",
-        help="Use all reflectograms or only one parity subset",
+        help="Использовать все рефлектограммы или только одну чётность",
     )
     args = parser.parse_args()
 

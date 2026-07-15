@@ -1,8 +1,8 @@
-# Raw measurement data can be hundreds of MB and should be stored outside git.
+# Сырые измерительные данные могут занимать сотни MB, их лучше хранить вне git.
 *.dat
 *.bin
 
-# Generated analysis products.
+# Сгенерированные результаты анализа.
 analysis_outputs/
 *.png
 *.svg
@@ -13,7 +13,7 @@ analysis_outputs/
 *.mat
 *.csv
 
-# Python runtime/cache files.
+# Runtime/cache-файлы Python.
 __pycache__/
 *.py[cod]
 *$py.class
@@ -22,7 +22,7 @@ __pycache__/
 .ruff_cache/
 .mplconfig/
 
-# Virtual environments and local editor files.
+# Виртуальные окружения и локальные файлы редакторов.
 .venv/
 venv/
 env/
@@ -36,7 +36,7 @@ env/
 .*.swn
 *~
 
-# Local Codex/agent state is machine-specific.
+# Локальное состояние Codex/agent привязано к конкретной машине.
 .codex
 .codex/
 .agents

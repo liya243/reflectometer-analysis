@@ -56,8 +56,8 @@ def render_colormap(ax, view, distance_m, time_s, jump_times_s, title, vmin, vma
     for jump_time_s in np.asarray(jump_times_s, dtype=np.float64):
         ax.axhline(float(jump_time_s), color="#D62728", linewidth=0.8, alpha=0.95)
     ax.set_title(title)
-    ax.set_xlabel("Distance (m)")
-    ax.set_ylabel("Time (s)")
+    ax.set_xlabel("Расстояние (m)")
+    ax.set_ylabel("Время (s)")
     return im
 
 
@@ -75,25 +75,25 @@ def active_zoom_limits(jump_times_s, record_end_s, margin_s, fallback_duration_s
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Render a baseline-subtracted fiber colormap and mark abrupt modulation jumps."
+        description="Построить цветную карту волокна с вычитанием baseline и отметить резкие скачки модуляции."
     )
-    parser.add_argument("dat_path", help="Path to the .dat file")
-    parser.add_argument("--output-dir", default="analysis_outputs", help="Directory for output files")
-    parser.add_argument("--scan-rate", type=float, default=None, help="Optional override for reflectogram scan rate in Hz")
-    parser.add_argument("--fiber-z-min", type=float, default=100.0, help="Start of useful reflectogram region in meters")
-    parser.add_argument("--fiber-z-max", type=float, default=200.0, help="End of useful reflectogram region in meters")
-    parser.add_argument("--baseline-tail-m", type=float, default=50.0, help="Subtract per-trace baseline from the last this many meters")
-    parser.add_argument("--trace-stride-full", type=int, default=8, help="Keep every Nth trace in the full-time colormap")
-    parser.add_argument("--trace-stride-zoom", type=int, default=1, help="Keep every Nth trace in the zoomed colormap")
-    parser.add_argument("--sample-stride", type=int, default=1, help="Keep every Nth sample along distance")
-    parser.add_argument("--detection-smooth-window", type=int, default=5, help="Smoothing window for frame-to-frame jump score")
-    parser.add_argument("--jump-threshold-sigma", type=float, default=5.0, help="Jump detector threshold in robust sigma units")
-    parser.add_argument("--min-peak-distance-s", type=float, default=0.03, help="Minimum time separation between detected jumps")
-    parser.add_argument("--zoom-margin-s", type=float, default=0.12, help="Zoom margin before first and after last detected jump")
-    parser.add_argument("--zoom-fallback-duration-s", type=float, default=1.0, help="Zoom duration if no jumps are found")
-    parser.add_argument("--lower-percentile", type=float, default=1.0, help="Lower percentile for color clipping")
-    parser.add_argument("--upper-percentile", type=float, default=99.0, help="Upper percentile for color clipping")
-    parser.add_argument("--cleanup-dataset-outputs", action="store_true", help="Delete previous outputs for this dataset before saving new ones")
+    parser.add_argument("dat_path", help="Путь к .dat-файлу")
+    parser.add_argument("--output-dir", default="analysis_outputs", help="Каталог для выходных файлов")
+    parser.add_argument("--scan-rate", type=float, default=None, help="Необязательная частота записи рефлектограмм в Hz")
+    parser.add_argument("--fiber-z-min", type=float, default=100.0, help="Начало полезного участка рефлектограммы в метрах")
+    parser.add_argument("--fiber-z-max", type=float, default=200.0, help="Конец полезного участка рефлектограммы в метрах")
+    parser.add_argument("--baseline-tail-m", type=float, default=50.0, help="Вычесть baseline каждой трассы по последним N метрам")
+    parser.add_argument("--trace-stride-full", type=int, default=8, help="Оставлять каждую N-ю трассу на полной карте")
+    parser.add_argument("--trace-stride-zoom", type=int, default=1, help="Оставлять каждую N-ю трассу на увеличенной карте")
+    parser.add_argument("--sample-stride", type=int, default=1, help="Оставлять каждый N-й отсчёт по расстоянию")
+    parser.add_argument("--detection-smooth-window", type=int, default=5, help="Окно сглаживания score скачков между кадрами")
+    parser.add_argument("--jump-threshold-sigma", type=float, default=5.0, help="Порог детектора скачков в робастных sigma")
+    parser.add_argument("--min-peak-distance-s", type=float, default=0.03, help="Минимальное время между найденными скачками")
+    parser.add_argument("--zoom-margin-s", type=float, default=0.12, help="Отступ zoom до первого и после последнего найденного скачка")
+    parser.add_argument("--zoom-fallback-duration-s", type=float, default=1.0, help="Длительность zoom, если скачки не найдены")
+    parser.add_argument("--lower-percentile", type=float, default=1.0, help="Нижний процентиль для ограничения цветовой шкалы")
+    parser.add_argument("--upper-percentile", type=float, default=99.0, help="Верхний процентиль для ограничения цветовой шкалы")
+    parser.add_argument("--cleanup-dataset-outputs", action="store_true", help="Удалить предыдущие результаты этого датасета перед сохранением новых")
     args = parser.parse_args()
 
     dat_path = Path(args.dat_path)
@@ -151,7 +151,7 @@ def main():
         vmin,
         vmax,
     )
-    full_fig.colorbar(full_im, ax=full_ax, label="Signal")
+    full_fig.colorbar(full_im, ax=full_ax, label="Сигнал")
     suffix = (
         f"fiber_{int(round(args.fiber_z_min))}_{int(round(args.fiber_z_max))}m"
         f"_colormap_jumps_baseline_tail_{int(round(args.baseline_tail_m))}m"
@@ -175,7 +175,7 @@ def main():
     )
     y0, y1 = active_zoom_limits(jump_time_s, float(trace_time_s[-1]), args.zoom_margin_s, args.zoom_fallback_duration_s)
     zoom_ax.set_ylim(y0, y1)
-    zoom_fig.colorbar(zoom_im, ax=zoom_ax, label="Signal")
+    zoom_fig.colorbar(zoom_im, ax=zoom_ax, label="Сигнал")
     zoom_png_path = output_dir / f"{dat_path.stem}_{suffix}_zoom.png"
     zoom_fig.savefig(zoom_png_path, dpi=200)
     plt.close(zoom_fig)

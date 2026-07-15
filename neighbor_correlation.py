@@ -122,7 +122,7 @@ scatter(data.reset_times_s, data.reset_corr, 30, 'r', 'filled');
 grid on;
 xlabel('Time (s)');
 ylabel('Neighbor correlation');
-title(sprintf('Neighbor correlation vs time, ignore first %.1f m', data.ignore_first_meters));
+title(sprintf('Корреляция соседних трасс во времени, первые %.1f m игнорируются', data.ignore_first_meters));
 legend('Raw', sprintf('Rolling mean (%d)', data.rolling_window), 'Candidate resets', 'Location', 'best');
 
 % Optional: save native MATLAB figure file after opening it.
@@ -138,49 +138,49 @@ legend('Raw', sprintf('Rolling mean (%d)', data.rolling_window), 'Candidate rese
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Track correlation between neighboring reflectograms vs time."
+        description="Отследить корреляцию между соседними рефлектограммами во времени."
     )
-    parser.add_argument("dat_path", help="Path to the .dat file")
+    parser.add_argument("dat_path", help="Путь к .dat-файлу")
     parser.add_argument(
         "--output-dir",
         default="analysis_outputs",
-        help="Directory for output files",
+        help="Каталог для выходных файлов",
     )
     parser.add_argument(
         "--scan-rate",
         type=float,
         default=None,
-        help="Optional override for reflectogram scan rate in Hz",
+        help="Необязательная частота записи рефлектограмм в Hz",
     )
     parser.add_argument(
         "--ignore-first-meters",
         type=float,
         default=100.0,
-        help="Ignore this many meters from the beginning of each reflectogram",
+        help="Игнорировать столько метров от начала каждой рефлектограммы",
     )
     parser.add_argument(
         "--rolling-window",
         type=int,
         default=64,
-        help="Rolling mean window in traces",
+        help="Окно скользящего среднего в трассах",
     )
     parser.add_argument(
         "--reset-min-distance-s",
         type=float,
         default=0.5,
-        help="Minimum time separation between candidate reset moments",
+        help="Минимальное временное расстояние между кандидатными моментами сброса",
     )
     parser.add_argument(
         "--reset-prominence",
         type=float,
         default=0.005,
-        help="Minimum prominence for dips on the rolling neighbor-correlation curve",
+        help="Минимальная выраженность провалов на сглаженной кривой соседней корреляции",
     )
     parser.add_argument(
         "--top-k",
         type=int,
         default=20,
-        help="Number of candidate reset moments to save in the summary CSV",
+        help="Число кандидатных моментов сброса для сохранения в summary CSV",
     )
     args = parser.parse_args()
 
@@ -226,10 +226,10 @@ def main():
     ax.plot(time_axis_s, corr, color="#4C78A8", linewidth=0.35, alpha=0.45)
     ax.plot(time_axis_s, corr_rolling, color="#111111", linewidth=1.6, label=f"Rolling mean ({args.rolling_window})")
     if peaks.size > 0:
-        ax.scatter(reset_times_s, reset_corr_rolling, s=28, color="#D62728", label="Candidate resets", zorder=5)
-    ax.set_xlabel("Time (s)")
-    ax.set_ylabel("Neighbor correlation")
-    ax.set_title("Correlation between neighboring traces vs time")
+        ax.scatter(reset_times_s, reset_corr_rolling, s=28, color="#D62728", label="Кандидатные сбросы", zorder=5)
+    ax.set_xlabel("Время (s)")
+    ax.set_ylabel("Корреляция соседних трасс")
+    ax.set_title("Корреляция между соседними трассами во времени")
     ax.grid(alpha=0.25)
     ax.legend()
 
